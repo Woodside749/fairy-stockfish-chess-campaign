@@ -509,7 +509,7 @@ namespace {
         // Piece promotion bonus
         if (pos.promoted_piece_type(Pt) != NO_PIECE_TYPE)
         {
-            Bitboard zone = pos.promotion_zone(Us);
+            Bitboard zone = pos.piece_promotion_zone(Us);
             if (zone & (b | s))
                 score += make_score(PieceValue[MG][pos.promoted_piece_type(Pt)] - PieceValue[MG][Pt],
                                     PieceValue[EG][pos.promoted_piece_type(Pt)] - PieceValue[EG][Pt]) / (zone & s && b ? 6 : 12);

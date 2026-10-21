@@ -129,6 +129,7 @@ public:
   const std::string& piece_to_char() const;
   const std::string& piece_to_char_synonyms() const;
   Bitboard promotion_zone(Color c) const;
+  Bitboard piece_promotion_zone(Color c) const;
   Square promotion_square(Color c, Square s) const;
   PieceType main_promotion_pawn_type(Color c) const;
   PieceSet promotion_piece_types(Color c) const;
@@ -450,6 +451,12 @@ inline const std::string& Position::piece_to_char_synonyms() const {
 inline Bitboard Position::promotion_zone(Color c) const {
   assert(var != nullptr);
   return var->promotionRegion[c];
+}
+
+// Chess Campaign: the zone for piece promotions (falls back to the pawns' promotion zone)
+inline Bitboard Position::piece_promotion_zone(Color c) const {
+  assert(var != nullptr);
+  return var->piecePromotionRegion[c] ? var->piecePromotionRegion[c] : var->promotionRegion[c];
 }
 
 inline Square Position::promotion_square(Color c, Square s) const {

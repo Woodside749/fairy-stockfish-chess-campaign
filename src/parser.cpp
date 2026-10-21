@@ -371,6 +371,9 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("startFen", v->startFen);
     parse_attribute("promotionRegionWhite", v->promotionRegion[WHITE]);
     parse_attribute("promotionRegionBlack", v->promotionRegion[BLACK]);
+    // Chess Campaign: a separate zone for piece promotions
+    parse_attribute("piecePromotionRegionWhite", v->piecePromotionRegion[WHITE]);
+    parse_attribute("piecePromotionRegionBlack", v->piecePromotionRegion[BLACK]);
     // Take the first promotionPawnTypes as the main promotionPawnType
     parse_attribute("promotionPawnTypes", v->mainPromotionPawnType[WHITE], v->pieceToChar);
     parse_attribute("promotionPawnTypes", v->mainPromotionPawnType[BLACK], v->pieceToChar);

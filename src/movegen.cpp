@@ -303,6 +303,7 @@ namespace {
                        | (quiets & ~pos.pieces()));
         Bitboard b1 = b & target;
         Bitboard promotion_zone = pos.promotion_zone(Us);
+        Bitboard piece_promotion_zone = pos.piece_promotion_zone(Us); // Chess Campaign
         PieceType promPt = pos.promoted_piece_type(Pt);
         Bitboard b2 = promPt && (!pos.promotion_limit(promPt) || pos.promotion_limit(promPt) > pos.count(Us, promPt)) ? b1 : Bitboard(0);
         Bitboard b3 = pos.piece_demotion() && pos.is_promoted(from) ? b1 : Bitboard(0);
@@ -317,7 +318,7 @@ namespace {
         if (b2 | b3)
         {
             if (pos.mandatory_piece_promotion())
-                b1 &= (promotion_zone & from ? Bitboard(0) : ~promotion_zone) | (pos.piece_promotion_on_capture() ? ~pos.pieces() : Bitboard(0));
+                b1 &= (piece_promotion_zone & from ? Bitboard(0) : ~piece_promotion_zone) | (pos.piece_promotion_on_capture() ? ~pos.pieces() : Bitboard(0));
             // Exclude quiet promotions/demotions
             if (pos.piece_promotion_on_capture())
             {
@@ -325,10 +326,10 @@ namespace {
                 b3 &= pos.pieces();
             }
             // Consider promotions/demotions into promotion zone
-            if (!(promotion_zone & from))
+            if (!(piece_promotion_zone & from))
             {
-                b2 &= promotion_zone;
-                b3 &= promotion_zone;
+                b2 &= piece_promotion_zone;
+                b3 &= piece_promotion_zone;
             }
         }
 
