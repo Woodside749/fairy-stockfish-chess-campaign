@@ -141,6 +141,8 @@ public:
   bool mandatory_piece_promotion() const;
   bool piece_demotion() const;
   bool blast_on_capture() const;
+  bool capturer_explodes(Move m) const;
+  bool capturer_petrifies(Move m) const;
   PieceSet blast_immune_types() const;
   PieceSet mutually_immune_types() const;
   EndgameEval endgame_eval() const;
@@ -508,6 +510,17 @@ inline bool Position::mandatory_piece_promotion() const {
 inline bool Position::piece_demotion() const {
   assert(var != nullptr);
   return var->pieceDemotion;
+}
+
+// Chess Campaign: whether a capture removes the capturer (a Bomb captures or is captured)
+inline bool Position::capturer_explodes(Move m) const {
+  return capture(m) && type_of(m) != EN_PASSANT
+      && ((var->explosiveTypes & type_of(moved_piece(m))) || (var->explosiveTypes & type_of(piece_on(to_sq(m)))));
+}
+
+// Chess Campaign: whether a capture turns the capturer to stone (it captures a Medusa)
+inline bool Position::capturer_petrifies(Move m) const {
+  return capture(m) && type_of(m) != EN_PASSANT && (var->petrifyingTypes & type_of(piece_on(to_sq(m))));
 }
 
 inline bool Position::blast_on_capture() const {

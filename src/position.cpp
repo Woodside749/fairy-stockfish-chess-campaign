@@ -1263,6 +1263,13 @@ bool Position::legal(Move m) const {
 
   Bitboard occupied = (type_of(m) != DROP ? pieces() ^ from : pieces()) | to;
 
+  // Chess Campaign: a king may not capture a Bomb or a Medusa (it would blow up or turn to
+  // stone), and a capturer that blows up leaves its square empty
+  if ((capturer_explodes(m) || capturer_petrifies(m)) && type_of(moved_piece(m)) == KING)
+      return false;
+  if (capturer_explodes(m) && !capturer_petrifies(m))
+      occupied &= ~square_bb(to);
+
   // Flying general rule and bikjang
   // In case of bikjang passing is always allowed, even when in check
   if (st->bikjang && is_pass(m))
@@ -1446,6 +1453,17 @@ bool Position::gives_check(Move m) const {
       janggiCannons = (type_of(m) == DROP ? janggiCannons : janggiCannons ^ from) | to;
   else if (janggiCannons & to)
       janggiCannons ^= to;
+
+  // Chess Campaign: after a capture by or of a Bomb the capturer is gone, and after
+  // capturing a Medusa it is a stone wall; check from the board after the move (lines can
+  // open through the captured square)
+  if ((capturer_explodes(m) || capturer_petrifies(m)) && count<KING>(~sideToMove))
+  {
+      Bitboard occupied = (pieces() ^ from) & ~square_bb(to);
+      if (capturer_petrifies(m))
+          occupied |= to;
+      return attackers_to(square<KING>(~sideToMove), occupied, sideToMove) & ~square_bb(from) & ~square_bb(to);
+  }
 
   // Is there a direct check?
   if (type_of(m) != PROMOTION && type_of(m) != PIECE_PROMOTION && type_of(m) != PIECE_DEMOTION && type_of(m) != CASTLING
@@ -1990,7 +2008,13 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
 
   // Remove the blast pieces
-  if (captured && (blast_on_capture() || var->petrifyOnCaptureTypes))
+  // (Chess Campaign: also the capturer of or by a Bomb, and the capturer of a Medusa)
+  bool campaignCapture = captured && type_of(m) != EN_PASSANT
+                      && (   (var->explosiveTypes & type_of(pc)) || (var->explosiveTypes & type_of(captured))
+                          || (var->petrifyingTypes & type_of(captured)));
+  // (In variants with Bombs or Medusas this runs for every capture, so that undo_move always
+  // finds up-to-date notes; for an ordinary capture nothing is removed.)
+  if (captured && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes))
   {
       std::memset(st->unpromotedBycatch, 0, sizeof(st->unpromotedBycatch));
       st->demotedBycatch = st->promotedBycatch = 0;
@@ -2000,7 +2024,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           blastImmune |= pieces(pt);
       };
       Bitboard blast = blast_on_capture() ? ((attacks_bb<KING>(to) & ((pieces(WHITE) | pieces(BLACK)) ^ pieces(PAWN))) | to)
-                       & (pieces() ^ blastImmune) : var->petrifyOnCaptureTypes & type_of(pc) ? square_bb(to) : Bitboard(0);
+                       & (pieces() ^ blastImmune) : (var->petrifyOnCaptureTypes & type_of(pc)) || campaignCapture ? square_bb(to) : Bitboard(0);
       while (blast)
       {
           Square bsq = pop_lsb(blast);
@@ -2062,7 +2086,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           }
 
           // Make a wall square where the piece was
-          if (bsq == to ? bool(var->petrifyOnCaptureTypes & type_of(bpc)) : var->petrifyBlastPieces)
+          if (bsq == to ? bool(var->petrifyOnCaptureTypes & type_of(bpc)) || bool(var->petrifyingTypes & type_of(captured)) : var->petrifyBlastPieces)
           {
               st->wallSquares |= bsq;
               byTypeBB[ALL_PIECES] |= bsq;
@@ -2161,7 +2185,7 @@ void Position::undo_move(Move m) {
   byTypeBB[ALL_PIECES] ^= st->wallSquares ^ st->previous->wallSquares;
 
   // Add the blast pieces
-  if (st->capturedPiece && (blast_on_capture() || var->petrifyOnCaptureTypes))
+  if (st->capturedPiece && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes))
   {
       Bitboard blast = attacks_bb<KING>(to) | to;
       while (blast)
@@ -2507,8 +2531,8 @@ bool Position::see_ge(Move m, Value threshold) const {
   if (swap <= 0)
       return true;
 
-  // Petrification ends SEE
-  if (var->petrifyOnCaptureTypes & type_of(moved_piece(m)) && capture(m))
+  // Petrification ends SEE (Chess Campaign: so do Bombs and Medusas)
+  if ((var->petrifyOnCaptureTypes & type_of(moved_piece(m)) && capture(m)) || capturer_explodes(m) || capturer_petrifies(m))
       return false;
 
   Bitboard occupied = (type_of(m) != DROP ? pieces() ^ from : pieces()) ^ to;

@@ -70,6 +70,10 @@ struct Variant {
   PieceSet mutuallyImmuneTypes = NO_PIECE_SET;
   PieceSet petrifyOnCaptureTypes = NO_PIECE_SET;
   bool petrifyBlastPieces = false;
+  // Chess Campaign: Bombs (a capture by or of one also removes the capturer) and Medusas
+  // (a piece that captures one turns to stone)
+  PieceSet explosiveTypes = NO_PIECE_SET;
+  PieceSet petrifyingTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};
