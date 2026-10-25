@@ -129,3 +129,13 @@ position alone (FEN) doesn't show this, so a GUI should give the engine the earl
 e.g. `position fen <fen two moves ago> moves <move> <move>`.
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
+
+### 2026-10-25: Zombies
+
+New variant setting `zombieTypes` (piece letters): when such a piece (Chess Campaign's
+Zombie) captures, the captured piece (as it was before any promotion) goes to the capturer's
+pocket, to be dropped later; captured pawns, pawn types and promoted pawns don't. Other
+pieces' captures are unaffected. Used with `pieceDrops = true` and a drop region (Chess
+Campaign: each side's first rank).
+
+Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.

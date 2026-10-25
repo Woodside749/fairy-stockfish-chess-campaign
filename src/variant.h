@@ -91,6 +91,10 @@ struct Variant {
   // Chess Campaign: pieces that must rest after moving (the Devil): if a side's last move
   // was made by one of them, none of them may move this turn
   PieceSet cooldownTypes = NO_PIECE_SET;
+  // Chess Campaign: pieces whose captures go to the capturer's pocket, for dropping later
+  // (the Zombie); captured pawns (and promoted pawns) don't, and other captures don't either
+  // (use with pieceDrops and a drop region)
+  PieceSet zombieTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};

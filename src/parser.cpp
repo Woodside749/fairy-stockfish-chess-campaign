@@ -433,6 +433,7 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("immuneTypes", v->immuneTypes, v->pieceToChar);
     parse_attribute("shieldTypes", v->shieldTypes, v->pieceToChar);
     parse_attribute("cooldownTypes", v->cooldownTypes, v->pieceToChar);
+    parse_attribute("zombieTypes", v->zombieTypes, v->pieceToChar);
     parse_attribute("doubleStep", v->doubleStep);
     parse_attribute("doubleStepRegionWhite", v->doubleStepRegion[WHITE]);
     parse_attribute("doubleStepRegionBlack", v->doubleStepRegion[BLACK]);

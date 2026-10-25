@@ -1629,6 +1629,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   Bitboard burned = burned_by(m);
   Piece pc = moved_piece(m);
   st->cooldownMove = var->cooldownTypes && type_of(m) != DROP && (var->cooldownTypes & type_of(pc));
+  st->zombieGain = NO_PIECE;
   Piece captured = piece_on(type_of(m) == EN_PASSANT ? capture_square(to) : to);
   if (to == from)
   {
@@ -1700,6 +1701,25 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
                              : unpromotedCaptured ? ~unpromotedCaptured
                                                   : make_piece(~color_of(captured), main_promotion_pawn_type(color_of(captured)));
           add_to_hand(pieceToHand);
+          k ^=  Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)] - 1]
+              ^ Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)]];
+
+          if (Eval::useNNUE)
+          {
+              dp.handPiece[1] = pieceToHand;
+              dp.handCount[1] = pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)];
+          }
+      }
+      // Chess Campaign: a Zombie's capture puts the captured piece (as it was before any
+      // promotion) in the capturer's pocket; pawns, pawn types and promoted pawns just die
+      else if (   var->zombieTypes && (var->zombieTypes & type_of(pc))
+               && (!capturedPromoted || unpromotedCaptured)
+               && !(var->promotionPawnTypes[them] & type_of(unpromotedCaptured ? unpromotedCaptured : captured))
+               && type_of(unpromotedCaptured ? unpromotedCaptured : captured) != PAWN)
+      {
+          Piece pieceToHand = ~(unpromotedCaptured ? unpromotedCaptured : captured);
+          add_to_hand(pieceToHand);
+          st->zombieGain = pieceToHand;
           k ^=  Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)] - 1]
               ^ Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)]];
 
@@ -2326,6 +2346,9 @@ void Position::undo_move(Move m) {
               remove_from_hand(!drop_loop() && st->capturedpromoted ? (st->unpromotedCapturedPiece ? ~st->unpromotedCapturedPiece
                                                                                                    : make_piece(~color_of(st->capturedPiece), main_promotion_pawn_type(us)))
                                                                     : ~st->capturedPiece);
+          // Chess Campaign: take back what a Zombie's capture put in the pocket
+          else if (st->zombieGain)
+              remove_from_hand(st->zombieGain);
       }
   }
 
@@ -2397,6 +2420,7 @@ void Position::do_null_move(StateInfo& newSt) {
   newSt.previous = st;
   st = &newSt;
   st->cooldownMove = false; // Chess Campaign: passing is no move by a resting piece
+  st->zombieGain = NO_PIECE;
 
   st->dirtyPiece.dirty_num = 0;
   st->dirtyPiece.piece[0] = NO_PIECE; // Avoid checks in UpdateAccumulator()
