@@ -588,7 +588,8 @@ void Position::set_check_info(StateInfo* si) const {
   {
       PieceType pt = pop_lsb(ps);
       PieceType movePt = pt == KING ? king_type() : pt;
-      si->checkSquares[pt] = ksq != SQ_NONE ? attacks_bb(~sideToMove, movePt, ksq, pieces()) : Bitboard(0);
+      // (Chess Campaign: the side to move sees through its own Ghosts)
+      si->checkSquares[pt] = ksq != SQ_NONE ? attacks_bb(~sideToMove, movePt, ksq, pieces() & ~ghosts(sideToMove)) : Bitboard(0);
       // Collect special piece types that require slower check and evasion detection
       if (AttackRiderTypes[movePt] & NON_SLIDING_RIDERS)
           si->nonSlidingRiders |= pieces(pt);
@@ -889,7 +890,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
                   }
               }
               else
-                  snipers |= b & ~attacks_bb(~c, pt, s, pieces());
+                  snipers |= b & ~attacks_bb(~c, pt, s, pieces() & ~ghosts(c));
               if (AttackRiderTypes[pt] & ~HOPPING_RIDERS)
                   slidingSnipers |= snipers & pieces(pt);
           }
@@ -909,13 +910,14 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
           }
       }
   }
-  Bitboard occupancy = pieces() ^ slidingSnipers;
+  // (Chess Campaign: the snipers' side sees through its own Ghosts)
+  Bitboard occupancy = (pieces() ^ slidingSnipers) & ~ghosts(c);
 
   while (snipers)
   {
     Square sniperSq = pop_lsb(snipers);
     bool isHopper = AttackRiderTypes[type_of(piece_on(sniperSq))] & HOPPING_RIDERS;
-    Bitboard b = between_bb(s, sniperSq, type_of(piece_on(sniperSq))) & (isHopper ? (pieces() ^ sniperSq) : occupancy);
+    Bitboard b = between_bb(s, sniperSq, type_of(piece_on(sniperSq))) & (isHopper ? (pieces() ^ sniperSq) & ~ghosts(c) : occupancy);
 
     if (b && (!more_than_one(b) || (isHopper && popcount(b) == 2)))
     {
@@ -935,6 +937,14 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
 /// given square. Slider attacks use the occupied bitboard to indicate occupancy.
 
 Bitboard Position::attackers_to(Square s, Bitboard occupied, Color c, Bitboard janggiCannons) const {
+  return attackers_to(s, occupied, c, janggiCannons, ghosts(c));
+}
+
+/// (Chess Campaign: `transparent` are the squares `c`'s pieces see through: its Ghosts, given
+/// by the caller when it works out the board after a move that hasn't been made yet)
+Bitboard Position::attackers_to(Square s, Bitboard occupied, Color c, Bitboard janggiCannons, Bitboard transparent) const {
+
+  occupied &= ~transparent;
 
   // Use a faster version for variants with moderate rule variations
   if (var->fastAttacks)
@@ -1307,7 +1317,7 @@ bool Position::legal(Move m) const {
   // If the moving piece is a king, check whether the destination square is
   // attacked by the opponent.
   if (type_of(moved_piece(m)) == KING)
-      return !attackers_to(to, occupied, ~us);
+      return !attackers_to(to, occupied, ~us, byTypeBB[JANGGI_CANNON], ghosts_after(~us, m));
 
   // Return early when without king
   if (!count<KING>(us))
@@ -1320,7 +1330,7 @@ bool Position::legal(Move m) const {
       janggiCannons ^= to;
 
   // A non-king move is legal if the king is not under attack after the move.
-  return !(attackers_to(square<KING>(us), occupied, ~us, janggiCannons) & ~SquareBB[to] & ~burned);
+  return !(attackers_to(square<KING>(us), occupied, ~us, janggiCannons, ghosts_after(~us, m)) & ~SquareBB[to] & ~burned);
 }
 
 
@@ -1412,10 +1422,10 @@ bool Position::pseudo_legal(const Move m) const {
           && !((from + pawn_push(us) == to) && !(pieces() & to)) // Not a single push
           && !(   (from + 2 * pawn_push(us) == to)               // Not a double push
                && (double_step_region(us) & from)
-               && !(pieces() & (to | (to - pawn_push(us)))))
+               && !(pieces() & to) && !(pieces() & ~ghosts(us) & (to - pawn_push(us)))) // (Chess Campaign: through own Ghosts)
           && !(   (from + 3 * pawn_push(us) == to)               // Not a triple push
                && (triple_step_region(us) & from)
-               && !(pieces() & (to | (to - pawn_push(us)) | (to - 2 * pawn_push(us))))))
+               && !(pieces() & to) && !(pieces() & ~ghosts(us) & ((to - pawn_push(us)) | (to - 2 * pawn_push(us))))))
           return false;
   }
   else if (!((capture(m) ? attacks_from(us, type_of(pc), from) : moves_from(us, type_of(pc), from)) & to))
@@ -1428,7 +1438,8 @@ bool Position::pseudo_legal(const Move m) const {
   // Evasions generator already takes care to avoid some kind of illegal moves
   // and legal() relies on this. We therefore have to take care that the same
   // kind of moves are filtered out here.
-  if (checkers() && !(checkers() & non_sliding_riders()))
+  // (Chess Campaign: not with Ghosts, where a check can be stopped in more ways)
+  if (checkers() && !(checkers() & non_sliding_riders()) && !var->ghostTypes)
   {
       if (type_of(pc) != KING)
       {
@@ -1472,6 +1483,8 @@ bool Position::gives_check(Move m) const {
       janggiCannons = (type_of(m) == DROP ? janggiCannons : janggiCannons ^ from) | to;
   else if (janggiCannons & to)
       janggiCannons ^= to;
+  // Chess Campaign: the squares our pieces see through after the move (our Ghosts)
+  Bitboard seeThrough = ghosts_after(sideToMove, m);
 
   // Chess Campaign: after a capture by or of a Bomb the capturer is gone, and after
   // capturing a Medusa it is a stone wall; check from the board after the move (lines can
@@ -1479,8 +1492,8 @@ bool Position::gives_check(Move m) const {
   if (burned_by(m) && count<KING>(~sideToMove))
   {
       Bitboard occupied = ((pieces() ^ from) | to) & ~burned_by(m);
-      return   (attackers_to(square<KING>(~sideToMove), occupied, sideToMove) & ~square_bb(from))
-            || (attacks_bb(sideToMove, type_of(moved_piece(m)), to, occupied) & square<KING>(~sideToMove));
+      return   (attackers_to(square<KING>(~sideToMove), occupied, sideToMove, byTypeBB[JANGGI_CANNON], seeThrough) & ~square_bb(from))
+            || (attacks_bb(sideToMove, type_of(moved_piece(m)), to, occupied & ~seeThrough) & square<KING>(~sideToMove));
   }
 
   if ((capturer_explodes(m) || capturer_petrifies(m)) && count<KING>(~sideToMove))
@@ -1488,7 +1501,7 @@ bool Position::gives_check(Move m) const {
       Bitboard occupied = (pieces() ^ from) & ~square_bb(to);
       if (capturer_petrifies(m))
           occupied |= to;
-      return attackers_to(square<KING>(~sideToMove), occupied, sideToMove) & ~square_bb(from) & ~square_bb(to);
+      return attackers_to(square<KING>(~sideToMove), occupied, sideToMove, byTypeBB[JANGGI_CANNON], seeThrough) & ~square_bb(from) & ~square_bb(to);
   }
 
   // Is there a direct check?
@@ -1498,13 +1511,13 @@ bool Position::gives_check(Move m) const {
       PieceType pt = type_of(moved_piece(m));
       if (pt == JANGGI_CANNON)
       {
-          if (attacks_bb(sideToMove, pt, to, occupied) & attacks_bb(sideToMove, pt, to, occupied & ~janggiCannons) & square<KING>(~sideToMove))
+          if (attacks_bb(sideToMove, pt, to, occupied & ~seeThrough) & attacks_bb(sideToMove, pt, to, occupied & ~janggiCannons & ~seeThrough) & square<KING>(~sideToMove))
               return true;
       }
       // (Chess Campaign: also a crooked bishop or rose, whose path may lead through the square it left)
       else if (AttackRiderTypes[pt] & (HOPPING_RIDERS | ASYMMETRICAL_RIDERS | RIDER_CROOKED_BISHOP | RIDER_ROSE))
       {
-          if (attacks_bb(sideToMove, pt, to, occupied) & square<KING>(~sideToMove))
+          if (attacks_bb(sideToMove, pt, to, occupied & ~seeThrough) & square<KING>(~sideToMove))
               return true;
       }
       else if (check_squares(pt) & to)
@@ -1512,8 +1525,10 @@ bool Position::gives_check(Move m) const {
   }
 
   // Is there a discovered check?
-  if (  ((type_of(m) != DROP && (blockers_for_king(~sideToMove) & from)) || (non_sliding_riders() & pieces(sideToMove)))
-      && attackers_to(square<KING>(~sideToMove), occupied, sideToMove, janggiCannons) & occupied)
+  // (Chess Campaign: with Ghosts always, since a Ghost that captures a blocker of its own
+  // side's line stays see-through there)
+  if (  ((type_of(m) != DROP && (blockers_for_king(~sideToMove) & from)) || (non_sliding_riders() & pieces(sideToMove)) || var->ghostTypes)
+      && attackers_to(square<KING>(~sideToMove), occupied, sideToMove, janggiCannons, seeThrough) & occupied)
       return true;
 
   // Is there a check by gated pieces?
@@ -1546,13 +1561,13 @@ bool Position::gives_check(Move m) const {
       return false;
 
   case PROMOTION:
-      return attacks_bb(sideToMove, promotion_type(m), to, pieces() ^ from) & square<KING>(~sideToMove);
+      return attacks_bb(sideToMove, promotion_type(m), to, (pieces() ^ from) & ~seeThrough) & square<KING>(~sideToMove);
 
   case PIECE_PROMOTION:
-      return attacks_bb(sideToMove, promoted_piece_type(type_of(moved_piece(m))), to, pieces() ^ from) & square<KING>(~sideToMove);
+      return attacks_bb(sideToMove, promoted_piece_type(type_of(moved_piece(m))), to, (pieces() ^ from) & ~seeThrough) & square<KING>(~sideToMove);
 
   case PIECE_DEMOTION:
-      return attacks_bb(sideToMove, type_of(unpromoted_piece_on(from)), to, pieces() ^ from) & square<KING>(~sideToMove);
+      return attacks_bb(sideToMove, type_of(unpromoted_piece_on(from)), to, (pieces() ^ from) & ~seeThrough) & square<KING>(~sideToMove);
 
   // En passant capture with check? We have already handled the case
   // of direct checks and ordinary discovered check, so the only case we

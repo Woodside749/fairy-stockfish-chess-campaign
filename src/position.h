@@ -284,6 +284,10 @@ public:
   Bitboard attackers_to(Square s, Bitboard occupied) const;
   Bitboard attackers_to(Square s, Bitboard occupied, Color c) const;
   Bitboard attackers_to(Square s, Bitboard occupied, Color c, Bitboard janggiCannons) const;
+  Bitboard attackers_to(Square s, Bitboard occupied, Color c, Bitboard janggiCannons, Bitboard transparent) const;
+  Bitboard ghosts(Color c) const;
+  PieceSet ghost_types() const { return var->ghostTypes; }
+  Bitboard ghosts_after(Color c, Move m) const;
   Bitboard attacks_from(Color c, PieceType pt, Square s) const;
   Bitboard moves_from(Color c, PieceType pt, Square s) const;
   Bitboard slider_blockers(Bitboard sliders, Square s, Bitboard& pinners, Color c) const;
@@ -1353,12 +1357,46 @@ inline Square Position::castling_rook_square(CastlingRights cr) const {
   return castlingRookSquare[cr];
 }
 
+// Chess Campaign: `c`'s Ghosts, which `c`'s own pieces see through
+inline Bitboard Position::ghosts(Color c) const {
+  if (!var->ghostTypes)
+      return Bitboard(0);
+  Bitboard b = 0;
+  for (PieceSet ps = var->ghostTypes; ps;)
+      b |= pieces(c, pop_lsb(ps));
+  return b;
+}
+
+// Chess Campaign: where `c`'s Ghosts will be after the move `m` (for working out attacks on
+// the board after a move that hasn't been made yet)
+inline Bitboard Position::ghosts_after(Color c, Move m) const {
+  Bitboard g = ghosts(c);
+  if (!var->ghostTypes)
+      return g;
+  Square from = from_sq(m), to = to_sq(m);
+  if (color_of(moved_piece(m)) == c)
+  {
+      if (type_of(m) != DROP)
+          g &= ~square_bb(from);
+      PieceType after = type_of(m) == PROMOTION ? promotion_type(m)
+                      : type_of(m) == PIECE_PROMOTION ? promoted_piece_type(type_of(moved_piece(m)))
+                      : type_of(m) == DROP ? in_hand_piece_type(m)
+                                           : type_of(moved_piece(m));
+      if ((var->ghostTypes & after) && type_of(m) != CASTLING && !capturer_explodes(m) && !capturer_petrifies(m))
+          g |= to;
+  }
+  else
+      g &= ~square_bb(to); // a Ghost of `c` captured there
+  return g;
+}
+
 inline Bitboard Position::attacks_from(Color c, PieceType pt, Square s) const {
   if (var->fastAttacks || var->fastAttacks2)
       return attacks_bb(c, pt, s, byTypeBB[ALL_PIECES]) & board_bb();
 
   PieceType movePt = pt == KING ? king_type() : pt;
-  Bitboard b = attacks_bb(c, movePt, s, byTypeBB[ALL_PIECES]);
+  // (Chess Campaign: `c`'s pieces see through its own Ghosts)
+  Bitboard b = attacks_bb(c, movePt, s, byTypeBB[ALL_PIECES] & ~ghosts(c));
   // Xiangqi soldier
   if (pt == SOLDIER && !(promoted_soldiers(c) & s))
       b &= file_bb(file_of(s));
@@ -1388,10 +1426,11 @@ inline Bitboard Position::moves_from(Color c, PieceType pt, Square s) const {
       return moves_bb(c, pt, s, byTypeBB[ALL_PIECES]) & board_bb();
 
   PieceType movePt = pt == KING ? king_type() : pt;
-  Bitboard b = moves_bb(c, movePt, s, byTypeBB[ALL_PIECES]);
+  // (Chess Campaign: `c`'s pieces see through its own Ghosts)
+  Bitboard b = moves_bb(c, movePt, s, byTypeBB[ALL_PIECES] & ~ghosts(c));
   // Add initial moves
   if (double_step_region(c) & s)
-      b |= moves_bb<true>(c, movePt, s, byTypeBB[ALL_PIECES]);
+      b |= moves_bb<true>(c, movePt, s, byTypeBB[ALL_PIECES] & ~ghosts(c));
   // Xiangqi soldier
   if (pt == SOLDIER && !(promoted_soldiers(c) & s))
       b &= file_bb(file_of(s));

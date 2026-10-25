@@ -153,10 +153,13 @@ namespace {
 
     target = Type == EVASIONS ? target : AllSquares;
 
+    // (Chess Campaign: a double or triple push may pass over our own Ghosts)
+    const Bitboard passable   = movable | (pos.board_bb(Us, PAWN) & pos.ghosts(Us));
+
     // Define single and double push, left and right capture, as well as respective promotion moves
     Bitboard b1 = shift<Up>(pawns) & movable & target;
-    Bitboard b2 = shift<Up>(shift<Up>(pawns & doubleStepRegion) & movable) & movable & target;
-    Bitboard b3 = shift<Up>(shift<Up>(shift<Up>(pawns & tripleStepRegion) & movable) & movable) & movable & target;
+    Bitboard b2 = shift<Up>(shift<Up>(pawns & doubleStepRegion) & passable) & movable & target;
+    Bitboard b3 = shift<Up>(shift<Up>(shift<Up>(pawns & tripleStepRegion) & passable) & passable) & movable & target;
     Bitboard brc = shift<UpRight>(pawns) & capturable & target;
     Bitboard blc = shift<UpLeft >(pawns) & capturable & target;
 
@@ -383,7 +386,9 @@ namespace {
     Bitboard target;
 
     // Skip generating non-king moves when in double check
-    if (Type != EVASIONS || !more_than_one(pos.checkers() & ~pos.non_sliding_riders()))
+    // (Chess Campaign: not with Ghosts, where one move can stop two checks: capturing a Ghost
+    // that gives check and that another piece checks through)
+    if (Type != EVASIONS || !more_than_one(pos.checkers() & ~pos.non_sliding_riders()) || pos.ghost_types())
     {
         target = Type == EVASIONS     ?  between_bb(ksq, lsb(pos.checkers()))
                : Type == NON_EVASIONS ? ~pos.pieces( Us)
@@ -398,6 +403,9 @@ namespace {
             Square checksq = lsb(pos.checkers());
             if (LeaperAttacks[~Us][type_of(pos.piece_on(checksq))][checksq] & pos.square<KING>(Us))
                 target = pos.checkers();
+            // (Chess Campaign: with Ghosts, any move may help; legal() decides)
+            if (pos.ghost_types())
+                target = ~pos.pieces(Us);
         }
 
         // Remove inaccessible squares (outside board + wall squares)

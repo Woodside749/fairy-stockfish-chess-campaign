@@ -139,3 +139,21 @@ pawns) and of promoted pawns don't. Other pieces' captures are unaffected. Used 
 Campaign: each side's first rank).
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
+
+### 2026-10-25: Ghosts
+
+New variant setting `ghostTypes` (piece letters): a side's own pieces move, capture and
+attack through its Ghosts as if they weren't there (but can't stop on their squares; pawns
+may double-step over them); for the opponent a Ghost blocks like any piece and can be
+captured. Ghosts of the same side see through each other.
+
+* Each side's moves and attacks use the board without its own Ghosts (`attacks_from`,
+  `moves_from`, `attackers_to`, check squares, pin detection).
+* For a move that hasn't been made yet, `ghosts_after` gives where a side's Ghosts will be
+  (legality and giving check).
+* With Ghosts, one move can stop two checks at once (capturing a Ghost that gives check and
+  that another piece checks through), and a Ghost that captures a blocker of its own side's
+  line stays see-through there; so in these variants check evasions and discovered checks
+  are always worked out in full.
+
+Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`, `movegen.cpp`.

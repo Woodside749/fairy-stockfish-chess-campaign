@@ -97,6 +97,9 @@ struct Variant {
   // drop region)
   PieceSet zombieTypes = NO_PIECE_SET;
   PieceSet zombieExcludedTypes = piece_set(PAWN);
+  // Chess Campaign: Ghosts: their own side's pieces move, capture and attack through them as
+  // if they weren't there (but can't stop on them); for the opponent they block like any piece
+  PieceSet ghostTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};
