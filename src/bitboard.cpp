@@ -298,6 +298,36 @@ Bitboard rose_attacks(Square s, Bitboard occupied) {
   return attacks;
 }
 
+/// tornado_attacks() returns the squares a tornado on `s` reaches: it slides diagonally two
+/// squares, turns by 90 degrees (always the same way round) and slides two more, around a
+/// diamond, stopping at any square on the way; a piece on the way stops it there (and may be
+/// captured). It never comes back to `s`. Unlike the other riders it isn't symmetric: a
+/// square it reaches may not reach it back.
+
+Bitboard tornado_attacks(Square s, Bitboard occupied) {
+  constexpr int DiagFile[4] = { 1,  1, -1, -1 };
+  constexpr int DiagRank[4] = { 1, -1, -1,  1 };
+  Bitboard attacks = 0;
+  for (int first = 0; first < 4; first++)
+      for (int turn : {-1, 1})
+      {
+          int f = file_of(s), r = rank_of(s);
+          for (int i = 0; i < 7; i++) // the 8th step would come back to s
+          {
+              int dir = ((first + turn * (i / 2)) % 4 + 4) % 4;
+              f += DiagFile[dir];
+              r += DiagRank[dir];
+              if (f < FILE_A || f > CrookedMaxFile || r < RANK_1 || r > CrookedMaxRank)
+                  break;
+              Square to = make_square(File(f), Rank(r));
+              attacks |= to;
+              if (occupied & to)
+                  break;
+          }
+      }
+  return attacks;
+}
+
 /// Bitboards::init_pieces() initializes piece move/attack bitboards and rider types
 
 void Bitboards::init_pieces() {
@@ -342,6 +372,8 @@ void Bitboards::init_pieces() {
                   riderTypes |= RIDER_CROOKED_BISHOP;
               if (pi->rose[initial][modality])
                   riderTypes |= RIDER_ROSE;
+              if (pi->tornado[initial][modality])
+                  riderTypes |= RIDER_TORNADO;
               for (auto const& [d, limit] : pi->hopper[initial][modality])
               {
                   if (RookDirectionsH.find(d) != RookDirectionsH.end())
@@ -382,6 +414,8 @@ void Bitboards::init_pieces() {
                           pseudo |= crooked_bishop_attacks(s, 0);
                       if (pi->rose[initial][modality])
                           pseudo |= rose_attacks(s, 0);
+                      if (pi->tornado[initial][modality])
+                          pseudo |= tornado_attacks(s, 0);
                   }
               }
           }

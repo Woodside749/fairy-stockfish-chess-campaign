@@ -176,3 +176,21 @@ captured, in its own colour, for good (even a pawn). Giving check is worked out 
 it becomes, and where Ghosts are after the move counts a Mimic that became a Ghost.
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
+
+### 2026-10-25: the tornado, and Rock Magicians
+
+* A new Betza combination `qB`, a circular bishop (Chess Campaign's Tornado): it slides two
+  squares diagonally, turns by 90 degrees (always the same way round) and slides two more,
+  around a diamond, stopping on any square on the way; a piece on the way stops it. It is a
+  new rider type (`RIDER_TORNADO`) like the rose, but its moves aren't symmetric (a square it
+  reaches may not reach it back), so attacks on a square are worked out from each tornado
+  itself.
+* New variant setting `rockTypes` (piece letters): instead of moving, a Rock Magician may use
+  its side's move to put a rock (a wall for the rest of the game) on an empty square next to
+  it. Such a move is a pass by the magician with the rock's square as its gating square,
+  written `d4d4,d4e5` (SAN `Md4,e5`). Putting a rock down never gives check, may block one,
+  and two of them in a row don't end the game (unlike two passes).
+
+Files: `types.h`, `piece.h`, `piece.cpp`, `bitboard.h`, `bitboard.cpp`, `psqt.cpp`,
+`variant.h`, `parser.cpp`, `position.h`, `position.cpp`, `movegen.cpp`, `uci.cpp`,
+`apiutil.h`.

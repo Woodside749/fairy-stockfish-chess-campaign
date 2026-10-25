@@ -112,7 +112,7 @@ namespace {
           // Chess Campaign: a crooked bishop slides diagonally, switching between the two
           // diagonals at every step (all zigzags: up, down and to both sides); a rose makes
           // knight jumps around a circle
-          else if ((crooked && c == 'B') || (circular && c == 'N'))
+          else if ((crooked && c == 'B') || (circular && (c == 'N' || c == 'B')))
           {
               if (moveModalities.size() == 0)
               {
@@ -120,7 +120,7 @@ namespace {
                   moveModalities.push_back(MODALITY_CAPTURE);
               }
               for (auto modality : moveModalities)
-                  (c == 'B' ? p->crooked : p->rose)[initial][modality] = true;
+                  (crooked ? p->crooked : c == 'N' ? p->rose : p->tornado)[initial][modality] = true;
               moveModalities.clear();
               prelimDirections.clear();
               hopper = false;

@@ -459,6 +459,19 @@ namespace {
         {
             moveList = make_move_and_gating<SPECIAL>(pos, moveList, Us, lsb(pos.pieces(Us)), lsb(pos.pieces(Us)));
         }
+
+        // Chess Campaign: a Rock Magician may use the move to put a rock on an empty square next to it
+        if (pos.rock_types() && Type != CAPTURES && Type != QUIET_CHECKS)
+            for (PieceSet ps = pos.rock_types(); ps;)
+                for (Bitboard magicians = pos.pieces(Us, pop_lsb(ps)); magicians;)
+                {
+                    Square s = pop_lsb(magicians);
+                    Bitboard rocks = attacks_bb<KING>(s) & pos.board_bb() & ~pos.pieces();
+                    if (Type == EVASIONS)
+                        rocks &= target;
+                    while (rocks)
+                        *moveList++ = make_gating<SPECIAL>(s, s, NO_PIECE_TYPE, pop_lsb(rocks));
+                }
     }
 
     // King moves

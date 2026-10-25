@@ -180,6 +180,9 @@ Value piece_value(Phase phase, PieceType pt)
             // Chess Campaign: a rose, valued like a nightrider's eight directions
             + (phase == MG ? 185 : 185) * 8 * pi->rose[0][MODALITY_CAPTURE]
             + (phase == MG ?  55 :  45) * 8 * pi->rose[0][MODALITY_QUIET]
+            // Chess Campaign: a tornado, valued like a bishop
+            + (phase == MG ? 185 : 185) * 4 * pi->tornado[0][MODALITY_CAPTURE]
+            + (phase == MG ?  55 :  45) * 4 * pi->tornado[0][MODALITY_QUIET]
             // Rook sliding directions are more valuable, especially in endgame
             + (phase == MG ?  15 :  15) * std::count_if(pi->slider[0][MODALITY_CAPTURE].begin(), pi->slider[0][MODALITY_CAPTURE].end(), [](const std::pair<const Direction, int>& d) { return std::abs(d.first) == NORTH || std::abs(d.first) == 1; })
             + (phase == MG ?  30 :  50) * std::count_if(pi->slider[0][MODALITY_QUIET].begin(), pi->slider[0][MODALITY_QUIET].end(), [](const std::pair<const Direction, int>& d) { return std::abs(d.first) == NORTH || std::abs(d.first) == 1; });

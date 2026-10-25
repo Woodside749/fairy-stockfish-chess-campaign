@@ -289,6 +289,9 @@ public:
   Bitboard attackers_to(Square s, Bitboard occupied, Color c, Bitboard janggiCannons, Bitboard transparent) const;
   Bitboard ghosts(Color c) const;
   PieceSet ghost_types() const { return var->ghostTypes; }
+  // Chess Campaign: Rock Magicians, and whether a move is one putting a rock down
+  PieceSet rock_types() const { return var->rockTypes; }
+  bool rock_move(Move m) const { return var->rockTypes && is_pass(m); }
   Bitboard ghosts_after(Color c, Move m) const;
   Bitboard attacks_from(Color c, PieceType pt, Square s) const;
   Bitboard moves_from(Color c, PieceType pt, Square s) const;

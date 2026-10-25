@@ -426,6 +426,7 @@ inline Square lsb(Bitboard b);
 
 Bitboard crooked_bishop_attacks(Square s, Bitboard occupied);
 Bitboard rose_attacks(Square s, Bitboard occupied);
+Bitboard tornado_attacks(Square s, Bitboard occupied);
 
 inline Bitboard rider_attacks_bb(RiderType R, Square s, Bitboard occupied) {
 
@@ -434,6 +435,8 @@ inline Bitboard rider_attacks_bb(RiderType R, Square s, Bitboard occupied) {
       return crooked_bishop_attacks(s, occupied);
   if (R == RIDER_ROSE)
       return rose_attacks(s, occupied);
+  if (R == RIDER_TORNADO)
+      return tornado_attacks(s, occupied);
   const Magic& m = magics[lsb(R)][s]; // re-use Bitboard lsb for riders
   return m.attacks[m.index(occupied)];
 }

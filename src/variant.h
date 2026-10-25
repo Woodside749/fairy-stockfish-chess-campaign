@@ -107,6 +107,10 @@ struct Variant {
   // Chess Campaign: Mimics: when one captures (and survives), it becomes the piece it
   // captured, in its own colour, for good
   PieceSet mimicTypes = NO_PIECE_SET;
+  // Chess Campaign: Rock Magicians: instead of moving, one may use its side's move to put a
+  // rock (a wall for the rest of the game) on an empty square next to it. Such a move is a
+  // pass by the magician with the rock's square as its gating square ("d4d4,d4e5").
+  PieceSet rockTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};

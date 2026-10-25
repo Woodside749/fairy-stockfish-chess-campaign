@@ -345,8 +345,8 @@ inline const std::string move_to_san(Position& pos, Move m, Notation n) {
             san += std::string("/") + (char)toupper(pos.piece_to_char()[make_piece(us, gating_type(m))]);
     }
 
-    // Wall square
-    if (pos.walling())
+    // Wall square (Chess Campaign: also a Rock Magician's rock)
+    if (pos.walling() || pos.rock_move(m))
         san += "," + square(pos, gating_square(m), n);
 
     // Check and checkmate

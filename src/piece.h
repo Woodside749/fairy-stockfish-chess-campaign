@@ -41,6 +41,8 @@ struct PieceInfo {
   bool crooked[2][MOVE_MODALITY_NB] = {};
   // Chess Campaign: rose moves (qN)
   bool rose[2][MOVE_MODALITY_NB] = {};
+  // Chess Campaign: tornado moves (qB)
+  bool tornado[2][MOVE_MODALITY_NB] = {};
 };
 
 struct PieceMap : public std::map<PieceType, const PieceInfo*> {

@@ -576,8 +576,8 @@ string UCI::move(const Position& pos, Move m) {
           move += UCI::square(pos, gating_square(m));
   }
 
-  // Wall square
-  if (pos.walling() && CurrentProtocol != XBOARD)
+  // Wall square (Chess Campaign: also a Rock Magician's rock)
+  if ((pos.walling() || pos.rock_move(m)) && CurrentProtocol != XBOARD)
       move += "," + UCI::square(pos, to) + UCI::square(pos, gating_square(m));
 
   return move;

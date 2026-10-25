@@ -873,7 +873,7 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
           // Chess Campaign: a crooked bishop or rose can reach a square along two paths, so
           // the squares "between" are not one line; their checks are always worked out in
           // full (they are non-sliding riders), so they are left out here
-          if (AttackRiderTypes[pt] & (RIDER_CROOKED_BISHOP | RIDER_ROSE))
+          if (AttackRiderTypes[pt] & (RIDER_CROOKED_BISHOP | RIDER_ROSE | RIDER_TORNADO))
               continue;
           Bitboard b = sliders & (PseudoAttacks[~c][pt][s] ^ LeaperAttacks[~c][pt][s]) & pieces(c, pt);
           if (b)
@@ -978,8 +978,18 @@ Bitboard Position::attackers_to(Square s, Bitboard occupied, Color c, Bitboard j
       if (board_bb(c, pt) & s)
       {
           PieceType move_pt = pt == KING ? king_type() : pt;
+          // Chess Campaign: a tornado's moves aren't symmetric, so ask each one directly
+          if (AttackRiderTypes[move_pt] & RIDER_TORNADO)
+          {
+              for (Bitboard tornados = pieces(c, pt); tornados;)
+              {
+                  Square s2 = pop_lsb(tornados);
+                  if (attacks_bb(c, move_pt, s2, occupied) & s)
+                      b |= s2;
+              }
+          }
           // Consider asymmetrical moves (e.g., horse)
-          if (AttackRiderTypes[move_pt] & ASYMMETRICAL_RIDERS)
+          else if (AttackRiderTypes[move_pt] & ASYMMETRICAL_RIDERS)
           {
               Bitboard asymmetricals = PseudoAttacks[~c][move_pt][s] & pieces(c, pt);
               while (asymmetricals)
@@ -1288,6 +1298,9 @@ bool Position::legal(Move m) const {
   }
 
   Bitboard occupied = (type_of(m) != DROP ? pieces() ^ from : pieces()) | to;
+  // Chess Campaign: a new rock blocks lines too
+  if (rock_move(m))
+      occupied |= gating_square(m);
 
   // Chess Campaign: a king may not capture a Bomb or a Medusa (it would blow up or turn to
   // stone), and a capturer that blows up leaves its square empty
@@ -1483,6 +1496,10 @@ bool Position::gives_check(Move m) const {
       janggiCannons = (type_of(m) == DROP ? janggiCannons : janggiCannons ^ from) | to;
   else if (janggiCannons & to)
       janggiCannons ^= to;
+  // Chess Campaign: putting a rock down only blocks lines, so it never gives check
+  if (rock_move(m))
+      return false;
+
   // Chess Campaign: the squares our pieces see through after the move (our Ghosts)
   Bitboard seeThrough = ghosts_after(sideToMove, m);
 
@@ -1523,7 +1540,7 @@ bool Position::gives_check(Move m) const {
               return true;
       }
       // (Chess Campaign: also a crooked bishop or rose, whose path may lead through the square it left)
-      else if (AttackRiderTypes[pt] & (HOPPING_RIDERS | ASYMMETRICAL_RIDERS | RIDER_CROOKED_BISHOP | RIDER_ROSE))
+      else if (AttackRiderTypes[pt] & (HOPPING_RIDERS | ASYMMETRICAL_RIDERS | RIDER_CROOKED_BISHOP | RIDER_ROSE | RIDER_TORNADO))
       {
           if (attacks_bb(sideToMove, pt, to, occupied & ~seeThrough) & square<KING>(~sideToMove))
               return true;
@@ -2232,6 +2249,14 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
               k ^= Zobrist::wall[bsq];
           }
       }
+  }
+
+  // Chess Campaign: put down a Rock Magician's rock
+  if (rock_move(m))
+  {
+      st->wallSquares |= gating_square(m);
+      byTypeBB[ALL_PIECES] |= gating_square(m);
+      k ^= Zobrist::wall[gating_square(m)];
   }
 
   // Add gated wall square
@@ -3136,7 +3161,7 @@ bool Position::is_immediate_game_end(Value& result, int ply) const {
   }
 
   // Check for bikjang rule (Janggi), double passing, or board running full
-  if (   (st->pliesFromNull > 0 && ((st->bikjang && st->previous->bikjang) || ((st->pass && st->previous->pass)&&!var->wallOrMove)))
+  if (   (st->pliesFromNull > 0 && ((st->bikjang && st->previous->bikjang) || ((st->pass && st->previous->pass)&&!var->wallOrMove&&!var->rockTypes)))
       || (var->adjudicateFullBoard && !(~pieces() & board_bb())))
   {
       result = var->materialCounting ? convert_mate_value(material_counting_result(), ply) : VALUE_DRAW;
