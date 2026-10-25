@@ -100,6 +100,10 @@ struct Variant {
   // Chess Campaign: Ghosts: their own side's pieces move, capture and attack through them as
   // if they weren't there (but can't stop on them); for the opponent they block like any piece
   PieceSet ghostTypes = NO_PIECE_SET;
+  // Chess Campaign: Undead: however one leaves the board (captured, burned, blown up), it goes
+  // back to its owner's pocket, to be dropped again (use with pieceDrops and a drop region).
+  // One that turns to stone stays a wall.
+  PieceSet undeadTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};

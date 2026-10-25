@@ -16,6 +16,7 @@ Changes (on the `chess-campaign` branch, see [CHESS-CAMPAIGN.md](CHESS-CAMPAIGN.
 * 2026-10-25: pieces that rest after moving (`cooldownTypes`, Chess Campaign's Devil): after such a piece moves, none of them may move on that side's next turn. Variants that don't set it behave exactly as before.
 * 2026-10-25: Zombies (`zombieTypes`, `zombieExcludedTypes`): a piece captured by a Zombie goes to the capturer's pocket, to be dropped later, unless it is one of the excluded types (default: pawns). Variants that don't set it behave exactly as before.
 * 2026-10-25: Ghosts (`ghostTypes`): a side's own pieces move, capture and attack through its Ghosts; for the opponent they block like any piece. Variants that don't set it behave exactly as before.
+* 2026-10-25: Undead (`undeadTypes`): however such a piece leaves the board, it goes back to its owner's pocket, to be dropped again. Variants that don't set it behave exactly as before.
 
 The original README follows.
 

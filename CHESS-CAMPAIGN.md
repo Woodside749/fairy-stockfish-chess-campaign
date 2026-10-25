@@ -157,3 +157,13 @@ captured. Ghosts of the same side see through each other.
   are always worked out in full.
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`, `movegen.cpp`.
+
+### 2026-10-25: Undead
+
+New variant setting `undeadTypes` (piece letters): however such a piece (Chess Campaign's
+Undead, Death Knight and Lich) leaves the board (captured, burned or blown up), it goes back
+to its owner's pocket, to be dropped again (even when a Zombie captures it). One that turns
+to stone stays a wall. Used with `pieceDrops = true` and a drop region (Chess Campaign: each
+side's first rank).
+
+Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.

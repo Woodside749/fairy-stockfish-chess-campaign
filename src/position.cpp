@@ -1725,6 +1725,21 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
               dp.handCount[1] = pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)];
           }
       }
+      // Chess Campaign: a captured Undead goes back to its owner's pocket (even from a Zombie)
+      else if (var->undeadTypes && (var->undeadTypes & type_of(unpromotedCaptured ? unpromotedCaptured : captured)))
+      {
+          Piece pieceToHand = unpromotedCaptured ? unpromotedCaptured : captured;
+          add_to_hand(pieceToHand);
+          st->zombieGain = pieceToHand;
+          k ^=  Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)] - 1]
+              ^ Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)]];
+
+          if (Eval::useNNUE)
+          {
+              dp.handPiece[1] = pieceToHand;
+              dp.handCount[1] = pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)];
+          }
+      }
       // Chess Campaign: a Zombie's capture puts the captured piece (as it was before any
       // promotion) in the capturer's pocket; zombieExcludedTypes and promoted pawns just die
       else if (   var->zombieTypes && (var->zombieTypes & type_of(pc))
@@ -2140,6 +2155,22 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
                   dp.handCount[dp.dirty_num - 1] = pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)];
               }
           }
+          // Chess Campaign: a burned or blown-up Undead goes back to its owner's pocket (unless
+          // it turns to stone here)
+          else if (   var->undeadTypes && (var->undeadTypes & type_of(st->unpromotedBycatch[bsq]))
+                   && !(bsq == to ? bool(var->petrifyOnCaptureTypes & type_of(bpc)) || bool(var->petrifyingTypes & type_of(captured)) : var->petrifyBlastPieces))
+          {
+              Piece pieceToHand = st->unpromotedBycatch[bsq];
+              add_to_hand(pieceToHand);
+              k ^=  Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)] - 1]
+                  ^ Zobrist::inHand[pieceToHand][pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)]];
+
+              if (Eval::useNNUE)
+              {
+                  dp.handPiece[dp.dirty_num - 1] = pieceToHand;
+                  dp.handCount[dp.dirty_num - 1] = pieceCountInHand[color_of(pieceToHand)][type_of(pieceToHand)];
+              }
+          }
 
           // Update material hash key
           k ^= Zobrist::psq[bpc][bsq];
@@ -2288,6 +2319,10 @@ void Position::undo_move(Move m) {
               if (captures_to_hand())
                   remove_from_hand(!drop_loop() && (st->promotedBycatch & bsq) ? make_piece(~color_of(unpromotedBpc), PAWN)
                                                                                : ~unpromotedBpc);
+              // Chess Campaign: take back an Undead that went home (one that turned to stone didn't)
+              else if (   var->undeadTypes && (var->undeadTypes & type_of(unpromotedBpc))
+                       && !(st->wallSquares & ~st->previous->wallSquares & bsq))
+                  remove_from_hand(unpromotedBpc);
           }
       }
       // Reset piece since it exploded itself
