@@ -61,6 +61,7 @@ namespace {
       bool rider = false;
       bool lame = false;
       bool crooked = false;
+      bool circular = false;
       bool initial = false;
       int distance = 0;
       std::vector<std::string> prelimDirections = {};
@@ -84,6 +85,9 @@ namespace {
           // Chess Campaign: crooked (zigzag) bishop, zB
           else if (c == 'z')
               crooked = true;
+          // Chess Campaign: circular (rose) knight, qN
+          else if (c == 'q')
+              circular = true;
           // Initial move
           else if (c == 'i')
               initial = true;
@@ -106,8 +110,9 @@ namespace {
               prelimDirections.push_back(std::string(2, c));
           }
           // Chess Campaign: a crooked bishop slides diagonally, switching between the two
-          // diagonals at every step (all zigzags: up, down and to both sides)
-          else if (crooked && c == 'B')
+          // diagonals at every step (all zigzags: up, down and to both sides); a rose makes
+          // knight jumps around a circle
+          else if ((crooked && c == 'B') || (circular && c == 'N'))
           {
               if (moveModalities.size() == 0)
               {
@@ -115,13 +120,14 @@ namespace {
                   moveModalities.push_back(MODALITY_CAPTURE);
               }
               for (auto modality : moveModalities)
-                  p->crooked[initial][modality] = true;
+                  (c == 'B' ? p->crooked : p->rose)[initial][modality] = true;
               moveModalities.clear();
               prelimDirections.clear();
               hopper = false;
               rider = false;
               lame = false;
               crooked = false;
+              circular = false;
               initial = false;
               distance = 0;
           }
@@ -197,6 +203,7 @@ namespace {
               rider = false;
               lame = false;
               crooked = false;
+              circular = false;
               initial = false;
               distance = 0;
           }

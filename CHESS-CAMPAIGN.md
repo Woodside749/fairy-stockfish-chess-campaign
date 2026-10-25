@@ -91,3 +91,18 @@ occupied square, which it may capture. Chess Campaign's Lightning moves like thi
 
 Files: `types.h`, `piece.h`, `piece.cpp`, `bitboard.h`, `bitboard.cpp`, `ucioption.cpp`,
 `position.cpp`, `psqt.cpp`.
+
+### 2026-10-25: the rose
+
+A new Betza modifier `q` for the knight: `qN` is a rose. It makes knight jumps that turn by
+45 degrees after each jump, always the same way round, so they trace a circle: up to seven
+jumps (the eighth would come back to its square), stopping at any of them. It jumps over
+pieces like a knight, but a piece on one of its landing squares stops it there (and may be
+captured). Chess Campaign's Rose moves like this.
+
+It is built like the crooked bishop above: a new rider type (`RIDER_ROSE`) worked out step
+by step on the variant's real board size, a non-sliding rider with full check detection, left
+out of the quick pin detection, and valued like a nightrider.
+
+Files: `types.h`, `piece.h`, `piece.cpp`, `bitboard.h`, `bitboard.cpp`, `position.cpp`,
+`psqt.cpp`.

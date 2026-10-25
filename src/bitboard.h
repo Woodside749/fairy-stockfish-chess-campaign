@@ -425,12 +425,15 @@ inline Bitboard rider_attacks_bb(Square s, Bitboard occupied) {
 inline Square lsb(Bitboard b);
 
 Bitboard crooked_bishop_attacks(Square s, Bitboard occupied);
+Bitboard rose_attacks(Square s, Bitboard occupied);
 
 inline Bitboard rider_attacks_bb(RiderType R, Square s, Bitboard occupied) {
 
   assert(R != NO_RIDER && !(R & (R - 1))); // exactly one bit
   if (R == RIDER_CROOKED_BISHOP)
       return crooked_bishop_attacks(s, occupied);
+  if (R == RIDER_ROSE)
+      return rose_attacks(s, occupied);
   const Magic& m = magics[lsb(R)][s]; // re-use Bitboard lsb for riders
   return m.attacks[m.index(occupied)];
 }
