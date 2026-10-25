@@ -144,6 +144,8 @@ public:
   bool capturer_explodes(Move m) const;
   bool capturer_petrifies(Move m) const;
   bool campaign_fire() const;
+  Bitboard immune_pieces() const;
+  Bitboard shielded(Color c) const;
   Bitboard burned_by(Move m) const;
   PieceSet blast_immune_types() const;
   PieceSet mutually_immune_types() const;
@@ -514,15 +516,40 @@ inline bool Position::piece_demotion() const {
   return var->pieceDemotion;
 }
 
-// Chess Campaign: whether a capture removes the capturer (a Bomb captures or is captured)
+// Chess Campaign: whether a capture removes the capturer (a Bomb captures or is captured;
+// an immune capturer survives)
 inline bool Position::capturer_explodes(Move m) const {
-  return capture(m) && type_of(m) != EN_PASSANT
+  return capture(m) && type_of(m) != EN_PASSANT && !(var->immuneTypes & type_of(moved_piece(m)))
       && ((var->explosiveTypes & type_of(moved_piece(m))) || (var->explosiveTypes & type_of(piece_on(to_sq(m)))));
 }
 
-// Chess Campaign: whether a capture turns the capturer to stone (it captures a Medusa)
+// Chess Campaign: whether a capture turns the capturer to stone (it captures a Medusa; an
+// immune capturer doesn't)
 inline bool Position::capturer_petrifies(Move m) const {
-  return capture(m) && type_of(m) != EN_PASSANT && (var->petrifyingTypes & type_of(piece_on(to_sq(m))));
+  return capture(m) && type_of(m) != EN_PASSANT && !(var->immuneTypes & type_of(moved_piece(m)))
+      && (var->petrifyingTypes & type_of(piece_on(to_sq(m))));
+}
+
+// Chess Campaign: the pieces no fire can burn: kings and immune pieces (the Angel and Devil)
+inline Bitboard Position::immune_pieces() const {
+  Bitboard b = pieces(KING);
+  for (PieceSet ps = var->immuneTypes; ps;)
+      b |= pieces(pop_lsb(ps));
+  return b;
+}
+
+// Chess Campaign: `c`'s pieces next to one of its shield pieces (the Angel), which can't be
+// captured or burned. Shield pieces don't shield each other.
+inline Bitboard Position::shielded(Color c) const {
+  if (!var->shieldTypes)
+      return Bitboard(0);
+  Bitboard shields = 0;
+  for (PieceSet ps = var->shieldTypes; ps;)
+      shields |= pieces(pop_lsb(ps));
+  Bitboard around = 0;
+  for (Bitboard b = shields & pieces(c); b;)
+      around |= attacks_bb<KING>(pop_lsb(b));
+  return around & pieces(c) & ~shields;
 }
 
 // Chess Campaign: whether a variant has pieces that burn (Dragons, Flames or Suns)
@@ -551,7 +578,8 @@ inline Bitboard Position::burned_by(Move m) const {
           break;
       b |= make_square(File(f), Rank(r));
   }
-  return b & pieces(~color_of(moved_piece(m))) & ~pieces(KING);
+  Color them = ~color_of(moved_piece(m));
+  return b & pieces(them) & ~immune_pieces() & ~shielded(them);
 }
 
 inline bool Position::blast_on_capture() const {

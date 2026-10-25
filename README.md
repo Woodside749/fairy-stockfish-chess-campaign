@@ -12,6 +12,7 @@ Changes (on the `chess-campaign` branch, see [CHESS-CAMPAIGN.md](CHESS-CAMPAIGN.
 * 2026-10-25: Flames and Suns (`flameTypes`, `sunTypes`): a capture by a Flame also removes the opponent's piece (not the king) on the next square in the direction of the move; every move of a Sun removes the opponent's pieces (not the king) around the square it lands on. Variants that don't set them behave exactly as before.
 * 2026-10-25: the crooked bishop (`zB`, Chess Campaign's Lightning): slides diagonally and switches to the other diagonal at every step. Pieces that don't use `z` behave exactly as before.
 * 2026-10-25: the rose (`qN`, Chess Campaign's Rose): knight jumps turning around a circle. Pieces that don't use `q` behave exactly as before.
+* 2026-10-25: immune pieces and shields (`immuneTypes`, `shieldTypes`, Chess Campaign's Angel and Devil): immune pieces are never burned and survive capturing Bombs and Medusas; pieces next to their side's shield piece can't be captured or burned. Variants that don't set them behave exactly as before.
 
 The original README follows.
 

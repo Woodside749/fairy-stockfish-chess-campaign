@@ -106,3 +106,16 @@ out of the quick pin detection, and valued like a nightrider.
 
 Files: `types.h`, `piece.h`, `piece.cpp`, `bitboard.h`, `bitboard.cpp`, `position.cpp`,
 `psqt.cpp`.
+
+### 2026-10-25: immune pieces and shields (Angels and Devils)
+
+New variant settings `immuneTypes` and `shieldTypes` (piece letters):
+
+* Immune pieces (Chess Campaign's Angel and Devil) are as safe as a king from the effects
+  above: fire (Dragons, Flames, Suns) never burns them, and they capture a Bomb or a Medusa
+  without blowing up or turning to stone. They can still be captured normally.
+* A shield piece (the Angel) protects its side's pieces next to it: they can't be captured
+  and fire doesn't burn them. Shield pieces don't shield each other, so the Angel herself
+  can always be captured.
+
+Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.

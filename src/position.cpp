@@ -1074,6 +1074,11 @@ bool Position::legal(Move m) const {
       && has_capture())
       return false;
 
+  // Chess Campaign: a piece next to its side's Angel (a shield piece) can't be captured
+  if (   var->shieldTypes && type_of(m) != CASTLING && capture(m)
+      && (shielded(~us) & (type_of(m) == EN_PASSANT ? capture_square(to) : to)))
+      return false;
+
   // Illegal non-drop moves
   if (must_drop() && count_in_hand(us, var->mustDropType) > 0)
   {
@@ -2027,7 +2032,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
   // Remove the blast pieces
   // (Chess Campaign: also the capturer of or by a Bomb, and the capturer of a Medusa)
-  bool campaignCapture = captured && type_of(m) != EN_PASSANT
+  bool campaignCapture = captured && type_of(m) != EN_PASSANT && !(var->immuneTypes & type_of(pc))
                       && (   (var->explosiveTypes & type_of(pc)) || (var->explosiveTypes & type_of(captured))
                           || (var->petrifyingTypes & type_of(captured)));
   // (In variants with Bombs or Medusas this runs for every capture, and in variants with
