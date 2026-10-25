@@ -470,7 +470,17 @@ namespace {
                     if (Type == EVASIONS)
                         rocks &= target;
                     while (rocks)
-                        *moveList++ = make_gating<SPECIAL>(s, s, NO_PIECE_TYPE, pop_lsb(rocks));
+                    {
+                        Square rock = pop_lsb(rocks);
+                        // A rock may not complete a cage of walls around either king
+                        Bitboard walls = pos.state()->wallSquares | rock;
+                        bool cages = false;
+                        for (Color c : { WHITE, BLACK })
+                            if (pos.count<KING>(c) && !(attacks_bb<KING>(pos.square<KING>(c)) & pos.board_bb() & ~walls))
+                                cages = true;
+                        if (!cages)
+                            *moveList++ = make_gating<SPECIAL>(s, s, NO_PIECE_TYPE, rock);
+                    }
                 }
     }
 

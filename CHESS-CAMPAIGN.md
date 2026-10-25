@@ -190,6 +190,8 @@ Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
   it. Such a move is a pass by the magician with the rock's square as its gating square,
   written `d4d4,d4e5` (SAN `Md4,e5`). Putting a rock down never gives check, may block one,
   and two of them in a row don't end the game (unlike two passes).
+* 2026-10-25, later: a rock may not complete a cage of walls (rocks, stone walls, the
+  board's edge) around either king.
 
 Files: `types.h`, `piece.h`, `piece.cpp`, `bitboard.h`, `bitboard.cpp`, `psqt.cpp`,
 `variant.h`, `parser.cpp`, `position.h`, `position.cpp`, `movegen.cpp`, `uci.cpp`,
