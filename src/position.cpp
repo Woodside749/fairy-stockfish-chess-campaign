@@ -1102,7 +1102,7 @@ bool Position::legal(Move m) const {
 
   // Chess Campaign: a piece next to its side's Angel (a shield piece) can't be captured
   if (   var->shieldTypes && type_of(m) != CASTLING && capture(m)
-      && (shielded(~us) & (type_of(m) == EN_PASSANT ? capture_square(to) : to)))
+      && (shielded(~us) & (type_of(m) == EN_PASSANT ? capture_square(to) : checker_jump(m) ? jumped_square(m) : to)))
       return false;
 
   // Illegal non-drop moves
@@ -1298,6 +1298,13 @@ bool Position::legal(Move m) const {
   }
 
   Bitboard occupied = (type_of(m) != DROP ? pieces() ^ from : pieces()) | to;
+  // Chess Campaign: an Archer's shot leaves the archer where it is and the target square empty;
+  // a Checker's jump empties the square it jumps over
+  Square capsq = checker_jump(m) ? jumped_square(m) : to;
+  if (shooting(m))
+      occupied = pieces() ^ to;
+  else if (checker_jump(m))
+      occupied ^= capsq;
   // Chess Campaign: a new rock blocks lines too
   if (rock_move(m))
       occupied |= gating_square(m);
@@ -1343,7 +1350,7 @@ bool Position::legal(Move m) const {
       janggiCannons ^= to;
 
   // A non-king move is legal if the king is not under attack after the move.
-  return !(attackers_to(square<KING>(us), occupied, ~us, janggiCannons, ghosts_after(~us, m)) & ~SquareBB[to] & ~burned);
+  return !(attackers_to(square<KING>(us), occupied, ~us, janggiCannons, ghosts_after(~us, m)) & ~SquareBB[to] & ~square_bb(capsq) & ~burned);
 }
 
 
@@ -1503,6 +1510,14 @@ bool Position::gives_check(Move m) const {
   // Chess Campaign: the squares our pieces see through after the move (our Ghosts)
   Bitboard seeThrough = ghosts_after(sideToMove, m);
 
+  // Chess Campaign: after an Archer's shot (the archer stays) or a Checker's jump (the piece it
+  // jumps over is gone), check from the board after the move
+  if (shooting(m) || checker_jump(m))
+  {
+      Bitboard occ = shooting(m) ? pieces() ^ to : ((pieces() ^ from ^ jumped_square(m)) | to);
+      return attackers_to(square<KING>(~sideToMove), occ, sideToMove, byTypeBB[JANGGI_CANNON], seeThrough) & occ;
+  }
+
   // Chess Campaign: a Mimic that captures checks as the piece it becomes
   if (mimic_copies(m))
   {
@@ -1539,8 +1554,9 @@ bool Position::gives_check(Move m) const {
           if (attacks_bb(sideToMove, pt, to, occupied & ~seeThrough) & attacks_bb(sideToMove, pt, to, occupied & ~janggiCannons & ~seeThrough) & square<KING>(~sideToMove))
               return true;
       }
-      // (Chess Campaign: also a crooked bishop or rose, whose path may lead through the square it left)
-      else if (AttackRiderTypes[pt] & (HOPPING_RIDERS | ASYMMETRICAL_RIDERS | RIDER_CROOKED_BISHOP | RIDER_ROSE | RIDER_TORNADO))
+      // (Chess Campaign: also a crooked bishop or rose, whose path may lead through the square it
+      // left, and an Archer, whose shot may go over the square it left)
+      else if ((AttackRiderTypes[pt] & (HOPPING_RIDERS | ASYMMETRICAL_RIDERS | RIDER_CROOKED_BISHOP | RIDER_ROSE | RIDER_TORNADO)) || (var->shooterTypes & pt))
       {
           if (attacks_bb(sideToMove, pt, to, occupied & ~seeThrough) & square<KING>(~sideToMove))
               return true;
@@ -1672,7 +1688,13 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   st->zombieGain = NO_PIECE;
   st->mimicPiece = NO_PIECE;
   bool mimicCopies = mimic_copies(m);
-  Piece captured = piece_on(type_of(m) == EN_PASSANT ? capture_square(to) : to);
+  // Chess Campaign: an Archer's shot leaves the archer where it is; a Checker's jump captures
+  // the piece it jumps over
+  bool shoots = shooting(m);
+  bool jumps = checker_jump(m);
+  st->shot = shoots;
+  st->jumped = jumps;
+  Piece captured = piece_on(type_of(m) == EN_PASSANT ? capture_square(to) : jumps ? jumped_square(m) : to);
   if (to == from)
   {
       assert((type_of(m) == PROMOTION && sittuyin_promotion()) || (is_pass(m) && (pass(us) || var->wallOrMove )));
@@ -1705,7 +1727,12 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   {
       Square capsq = to;
 
-      if (type_of(m) == EN_PASSANT)
+      if (jumps)
+      {
+          capsq = jumped_square(m);
+          st->captureSquare = capsq;
+      }
+      else if (type_of(m) == EN_PASSANT)
       {
           capsq = capture_square(to);
           st->captureSquare = capsq;
@@ -1735,7 +1762,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       Piece unpromotedCaptured = unpromoted_piece_on(capsq);
       remove_piece(capsq);
 
-      if (type_of(m) == EN_PASSANT)
+      if (type_of(m) == EN_PASSANT || jumps)
           board[capsq] = NO_PIECE;
       if (captures_to_hand())
       {
@@ -1809,7 +1836,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       // Reset rule 50 counter for irreversible drops
       st->rule50 = 0;
   }
-  else
+  else if (!shoots)
   {
       k ^= Zobrist::psq[pc][from] ^ Zobrist::psq[pc][to];
 
@@ -1934,10 +1961,11 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       {
           dp.piece[0] = pc;
           dp.from[0] = from;
-          dp.to[0] = to;
+          dp.to[0] = shoots ? from : to;
       }
 
-      move_piece(from, to);
+      if (!shoots)
+          move_piece(from, to);
   }
 
   // If the moving piece is a pawn do some special extra work
@@ -2143,7 +2171,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
   // Remove the blast pieces
   // (Chess Campaign: also the capturer of or by a Bomb, and the capturer of a Medusa)
-  bool campaignCapture = captured && type_of(m) != EN_PASSANT && !(var->immuneTypes & type_of(pc))
+  bool campaignCapture = captured && type_of(m) != EN_PASSANT && !shoots && !jumps && !(var->immuneTypes & type_of(pc))
                       && (   (var->explosiveTypes & type_of(pc)) || (var->explosiveTypes & type_of(captured))
                           || (var->petrifyingTypes & type_of(captured)));
   // (In variants with Bombs or Medusas this runs for every capture, and in variants with
@@ -2446,14 +2474,16 @@ void Position::undo_move(Move m) {
   {
       if (type_of(m) == DROP)
           undrop_piece(make_piece(us, in_hand_piece_type(m)), to); // Remove the dropped piece
-      else
+      else if (!st->shot) // (Chess Campaign: an Archer that shot never moved)
           move_piece(to, from); // Put the piece back at the source square
 
       if (st->capturedPiece)
       {
           Square capsq = to;
 
-          if (type_of(m) == EN_PASSANT)
+          if (st->jumped) // Chess Campaign: a Checker's jump
+              capsq = st->captureSquare;
+          else if (type_of(m) == EN_PASSANT)
           {
               capsq = st->captureSquare;
 

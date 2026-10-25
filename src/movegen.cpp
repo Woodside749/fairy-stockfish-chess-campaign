@@ -387,8 +387,9 @@ namespace {
 
     // Skip generating non-king moves when in double check
     // (Chess Campaign: not with Ghosts, where one move can stop two checks: capturing a Ghost
-    // that gives check and that another piece checks through)
-    if (Type != EVASIONS || !more_than_one(pos.checkers() & ~pos.non_sliding_riders()) || pos.ghost_types())
+    // that gives check and that another piece checks through; nor with Checkers, whose jump can
+    // capture one checker and land in the other's way)
+    if (Type != EVASIONS || !more_than_one(pos.checkers() & ~pos.non_sliding_riders()) || pos.ghost_types() || pos.checker_types())
     {
         target = Type == EVASIONS     ?  between_bb(ksq, lsb(pos.checkers()))
                : Type == NON_EVASIONS ? ~pos.pieces( Us)
@@ -459,6 +460,22 @@ namespace {
         {
             moveList = make_move_and_gating<SPECIAL>(pos, moveList, Us, lsb(pos.pieces(Us)), lsb(pos.pieces(Us)));
         }
+
+        // Chess Campaign: a Checker may jump diagonally over an enemy piece (not a king) next to
+        // it onto the empty square behind it, capturing it
+        if (pos.checker_types() && (Type == CAPTURES || Type == NON_EVASIONS || Type == EVASIONS))
+            for (PieceSet ps = pos.checker_types(); ps;)
+                for (Bitboard checkers = pos.pieces(Us, pop_lsb(ps)); checkers;)
+                {
+                    Square s = pop_lsb(checkers);
+                    for (Bitboard landings = attacks_bb<ALFIL>(s) & pos.board_bb() & ~pos.pieces(); landings;)
+                    {
+                        Square land = pop_lsb(landings);
+                        Square over = Square((int(s) + int(land)) / 2);
+                        if ((pos.pieces(~Us) & over) && !(pos.pieces(KING) & over))
+                            *moveList++ = make<SPECIAL>(s, land);
+                    }
+                }
 
         // Chess Campaign: a Rock Magician may use the move to put a rock on an empty square next to it
         if (   pos.rock_types() && Type != CAPTURES && Type != QUIET_CHECKS

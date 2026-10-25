@@ -115,6 +115,11 @@ struct Variant {
   // FEN doesn't show it)
   PieceSet rockTypes = NO_PIECE_SET;
   int rockLimit = 0;
+  // Chess Campaign: Archers: their captures are shots: the captured piece is removed and the
+  // archer stays on its square. Checkers: they also capture by jumping diagonally over an
+  // enemy piece (not a king) next to them onto the empty square behind it, removing it.
+  PieceSet shooterTypes = NO_PIECE_SET;
+  PieceSet checkerTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};

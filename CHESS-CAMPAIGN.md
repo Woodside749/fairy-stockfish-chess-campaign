@@ -199,3 +199,22 @@ Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
 Files: `types.h`, `piece.h`, `piece.cpp`, `bitboard.h`, `bitboard.cpp`, `psqt.cpp`,
 `variant.h`, `parser.cpp`, `position.h`, `position.cpp`, `movegen.cpp`, `uci.cpp`,
 `apiutil.h`.
+
+### 2026-10-25: Archers and Checkers
+
+New variant settings `shooterTypes` and `checkerTypes` (piece letters):
+
+* An Archer's captures are shots: the captured piece is removed and the archer stays on its
+  square (Chess Campaign's Archer is `mKcnDcnA`: steps like a king, shoots 2 squares away
+  over an empty square). Legality and checks are worked out with the archer still on its
+  square; a direct check is worked out from the square it moves to (its line of fire may
+  cross the square it left).
+* A Checker also captures like in draughts: it jumps diagonally over an enemy piece (not a
+  king) right next to it onto the empty square behind, removing the piece it jumped over.
+  Such a move has its own move type (SPECIAL, from and to two squares apart diagonally) and
+  counts as a capture; the captured square is remembered like en passant's. One jump can
+  stop a double check (capturing one checker and landing in the other's way), so with
+  Checkers non-king moves are generated in double check too.
+* Neither a shot nor a jump makes the shooter or jumper blow up or turn to stone.
+
+Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`, `movegen.cpp`.

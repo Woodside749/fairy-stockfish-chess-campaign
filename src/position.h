@@ -87,6 +87,8 @@ struct StateInfo {
   bool       cooldownMove; // Chess Campaign: this move was made by a piece that must rest next turn
   Piece      zombieGain;   // Chess Campaign: the piece the capture put in a pocket (a Zombie's catch, or an Undead going home)
   Piece      mimicPiece;   // Chess Campaign: the Mimic that turned into the piece it captured
+  bool       shot;         // Chess Campaign: an Archer's shot (the archer stayed where it was)
+  bool       jumped;       // Chess Campaign: a Checker's jump (captureSquare is the square jumped over)
 
   // Used by NNUE
   Eval::NNUE::Accumulator accumulator;
@@ -149,6 +151,10 @@ public:
   bool capturer_petrifies(Move m) const;
   bool campaign_fire() const;
   bool mimic_copies(Move m) const;
+  bool shooting(Move m) const;
+  bool checker_jump(Move m) const;
+  Square jumped_square(Move m) const { return Square((int(from_sq(m)) + int(to_sq(m))) / 2); }
+  PieceSet checker_types() const { return var->checkerTypes; }
   Bitboard immune_pieces() const;
   Bitboard shielded(Color c) const;
   Bitboard burned_by(Move m) const;
@@ -528,17 +534,29 @@ inline bool Position::piece_demotion() const {
   return var->pieceDemotion;
 }
 
+// Chess Campaign: an Archer's capture (a shot: the archer stays on its square)
+inline bool Position::shooting(Move m) const {
+  return   var->shooterTypes && type_of(m) == NORMAL && from_sq(m) != to_sq(m) && !empty(to_sq(m))
+        && (var->shooterTypes & type_of(moved_piece(m)));
+}
+
+// Chess Campaign: a Checker's jump over an enemy piece (see jumped_square)
+inline bool Position::checker_jump(Move m) const {
+  return   var->checkerTypes && type_of(m) == SPECIAL && from_sq(m) != to_sq(m)
+        && (var->checkerTypes & type_of(moved_piece(m)));
+}
+
 // Chess Campaign: whether a capture removes the capturer (a Bomb captures or is captured;
-// an immune capturer survives)
+// an immune capturer survives; an Archer's shot or a Checker's jump hurts only the target)
 inline bool Position::capturer_explodes(Move m) const {
-  return capture(m) && type_of(m) != EN_PASSANT && !(var->immuneTypes & type_of(moved_piece(m)))
+  return capture(m) && type_of(m) != EN_PASSANT && !shooting(m) && !checker_jump(m) && !(var->immuneTypes & type_of(moved_piece(m)))
       && ((var->explosiveTypes & type_of(moved_piece(m))) || (var->explosiveTypes & type_of(piece_on(to_sq(m)))));
 }
 
 // Chess Campaign: whether a capture turns the capturer to stone (it captures a Medusa; an
 // immune capturer doesn't)
 inline bool Position::capturer_petrifies(Move m) const {
-  return capture(m) && type_of(m) != EN_PASSANT && !(var->immuneTypes & type_of(moved_piece(m)))
+  return capture(m) && type_of(m) != EN_PASSANT && !shooting(m) && !checker_jump(m) && !(var->immuneTypes & type_of(moved_piece(m)))
       && (var->petrifyingTypes & type_of(piece_on(to_sq(m))));
 }
 
@@ -1577,7 +1595,8 @@ inline bool Position::capture_or_promotion(Move m) const {
 inline bool Position::capture(Move m) const {
   assert(is_ok(m));
   // Castling is encoded as "king captures rook"
-  return (!empty(to_sq(m)) && type_of(m) != CASTLING && from_sq(m) != to_sq(m)) || type_of(m) == EN_PASSANT;
+  // (Chess Campaign: a Checker's jump captures the piece it jumps over)
+  return (!empty(to_sq(m)) && type_of(m) != CASTLING && from_sq(m) != to_sq(m)) || type_of(m) == EN_PASSANT || checker_jump(m);
 }
 
 inline Square Position::capture_square(Square to) const {

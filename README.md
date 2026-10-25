@@ -19,6 +19,7 @@ Changes (on the `chess-campaign` branch, see [CHESS-CAMPAIGN.md](CHESS-CAMPAIGN.
 * 2026-10-25: Undead (`undeadTypes`): however such a piece leaves the board, it goes back to its owner's pocket, to be dropped again. Variants that don't set it behave exactly as before.
 * 2026-10-25: Mimics (`mimicTypes`): when such a piece captures (and survives), it becomes the piece it captured, in its own colour. Variants that don't set it behave exactly as before.
 * 2026-10-25: the tornado (`qB`, a circular bishop) and Rock Magicians (`rockTypes`: instead of moving, put a permanent rock on an empty square next to it). Variants that don't use them behave exactly as before.
+* 2026-10-25: Archers (`shooterTypes`: they capture by shooting and stay on their square) and Checkers (`checkerTypes`: they capture by jumping over an enemy piece, like in draughts). Variants that don't use them behave exactly as before.
 
 The original README follows.
 
