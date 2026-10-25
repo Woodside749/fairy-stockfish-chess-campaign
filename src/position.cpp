@@ -1269,7 +1269,7 @@ bool Position::legal(Move m) const {
       return false;
   if (capturer_explodes(m) && !capturer_petrifies(m))
       occupied &= ~square_bb(to);
-  // Chess Campaign: pieces burned by a Dragon are gone too
+  // Chess Campaign: pieces burned by a Dragon, Flame or Sun are gone too
   Bitboard burned = burned_by(m);
   occupied &= ~burned;
 
@@ -1608,7 +1608,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   Color them = ~us;
   Square from = from_sq(m);
   Square to = to_sq(m);
-  // Chess Campaign: what a Dragon's fire burns, worked out before anything moves
+  // Chess Campaign: what a Dragon's, Flame's or Sun's fire burns, worked out before anything moves
   Bitboard burned = burned_by(m);
   Piece pc = moved_piece(m);
   Piece captured = piece_on(type_of(m) == EN_PASSANT ? capture_square(to) : to);
@@ -2024,10 +2024,14 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   bool campaignCapture = captured && type_of(m) != EN_PASSANT
                       && (   (var->explosiveTypes & type_of(pc)) || (var->explosiveTypes & type_of(captured))
                           || (var->petrifyingTypes & type_of(captured)));
-  // (In variants with Bombs or Medusas this runs for every capture, so that undo_move always
-  // finds up-to-date notes; for an ordinary capture nothing is removed.)
-  if (captured && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes || var->breathTypes))
+  // (In variants with Bombs or Medusas this runs for every capture, and in variants with
+  // fire for every move, so that undo_move always finds up-to-date notes; for an ordinary
+  // move nothing is removed.)
+  if (   (captured && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes))
+      || campaign_fire())
   {
+      if (burned)
+          st->rule50 = 0;
       std::memset(st->unpromotedBycatch, 0, sizeof(st->unpromotedBycatch));
       st->demotedBycatch = st->promotedBycatch = 0;
       Bitboard blastImmune = 0;
@@ -2035,7 +2039,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           PieceType pt = pop_lsb(ps);
           blastImmune |= pieces(pt);
       };
-      Bitboard blast = blast_on_capture() ? ((attacks_bb<KING>(to) & ((pieces(WHITE) | pieces(BLACK)) ^ pieces(PAWN))) | to)
+      Bitboard blast = !captured ? Bitboard(0)
+                     : blast_on_capture() ? ((attacks_bb<KING>(to) & ((pieces(WHITE) | pieces(BLACK)) ^ pieces(PAWN))) | to)
                        & (pieces() ^ blastImmune) : (var->petrifyOnCaptureTypes & type_of(pc)) || campaignCapture ? square_bb(to) : Bitboard(0);
       blast |= burned;
       while (blast)
@@ -2198,11 +2203,13 @@ void Position::undo_move(Move m) {
   byTypeBB[ALL_PIECES] ^= st->wallSquares ^ st->previous->wallSquares;
 
   // Add the blast pieces
-  if (st->capturedPiece && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes || var->breathTypes))
+  if (   (st->capturedPiece && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes))
+      || campaign_fire())
   {
       Bitboard blast = attacks_bb<KING>(to) | to;
-      // Chess Campaign: the two squares a Dragon's fire reached (its notes say what burned)
-      if (var->breathTypes)
+      // Chess Campaign: the squares a Dragon's or Flame's fire may have reached (the notes say
+      // what really burned; a Sun's squares are the ones around `to`)
+      if (var->breathTypes || var->flameTypes)
       {
           int df = (file_of(to) > file_of(from)) - (file_of(to) < file_of(from));
           int dr = (rank_of(to) > rank_of(from)) - (rank_of(to) < rank_of(from));

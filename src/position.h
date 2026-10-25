@@ -143,6 +143,7 @@ public:
   bool blast_on_capture() const;
   bool capturer_explodes(Move m) const;
   bool capturer_petrifies(Move m) const;
+  bool campaign_fire() const;
   Bitboard burned_by(Move m) const;
   PieceSet blast_immune_types() const;
   PieceSet mutually_immune_types() const;
@@ -524,16 +525,26 @@ inline bool Position::capturer_petrifies(Move m) const {
   return capture(m) && type_of(m) != EN_PASSANT && (var->petrifyingTypes & type_of(piece_on(to_sq(m))));
 }
 
-// Chess Campaign: the enemy pieces (not kings) a Dragon's capture burns: those on the next
-// two squares past the captured piece, in the direction of the move
+// Chess Campaign: whether a variant has pieces that burn (Dragons, Flames or Suns)
+inline bool Position::campaign_fire() const {
+  return var->breathTypes || var->flameTypes || var->sunTypes;
+}
+
+// Chess Campaign: the enemy pieces (not kings) a move burns. A Dragon's capture burns the
+// next two squares past the captured piece, in the direction of the move, and a Flame's
+// capture the next one; a Sun burns every square next to where it lands, on any move.
 inline Bitboard Position::burned_by(Move m) const {
-  if (!var->breathTypes || !capture(m) || type_of(m) == DROP || !(var->breathTypes & type_of(moved_piece(m))))
+  if (!campaign_fire() || type_of(m) == DROP || type_of(m) == CASTLING || is_pass(m))
       return Bitboard(0);
+  PieceType pt = type_of(moved_piece(m));
   Square from = from_sq(m), to = to_sq(m);
+  Bitboard b = 0;
+  if (var->sunTypes & pt)
+      b |= attacks_bb<KING>(to);
+  int reach = !capture(m) ? 0 : (var->breathTypes & pt) ? 2 : (var->flameTypes & pt) ? 1 : 0;
   int df = (file_of(to) > file_of(from)) - (file_of(to) < file_of(from));
   int dr = (rank_of(to) > rank_of(from)) - (rank_of(to) < rank_of(from));
-  Bitboard b = 0;
-  for (int i = 1; i <= 2; i++)
+  for (int i = 1; i <= reach; i++)
   {
       int f = int(file_of(to)) + i * df, r = int(rank_of(to)) + i * dr;
       if (f < FILE_A || f > max_file() || r < RANK_1 || r > max_rank())

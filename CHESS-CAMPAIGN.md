@@ -57,3 +57,18 @@ a line onto the mover's own king is illegal, and one that opens a line onto the 
 king gives check.
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
+
+### 2026-10-25: Flames and Suns
+
+New variant settings `flameTypes` and `sunTypes` (piece letters), using the same fire as
+the Dragons above (only the opponent's pieces burn, never a king):
+
+* A capture by a Flame also removes the opponent's piece on the next square beyond the
+  captured piece, in the direction of the move.
+* Every move of a Sun, capture or not, removes the opponent's pieces on the squares around
+  the square it lands on. Such a move resets the fifty-move counter.
+
+In variants with fire, the bookkeeping for removed pieces now runs for every move (not only
+captures), so that undoing a move always restores the right pieces.
+
+Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.

@@ -428,6 +428,8 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("explosiveTypes", v->explosiveTypes, v->pieceToChar);
     parse_attribute("petrifyingTypes", v->petrifyingTypes, v->pieceToChar);
     parse_attribute("breathTypes", v->breathTypes, v->pieceToChar);
+    parse_attribute("flameTypes", v->flameTypes, v->pieceToChar);
+    parse_attribute("sunTypes", v->sunTypes, v->pieceToChar);
     parse_attribute("doubleStep", v->doubleStep);
     parse_attribute("doubleStepRegionWhite", v->doubleStepRegion[WHITE]);
     parse_attribute("doubleStepRegionBlack", v->doubleStepRegion[BLACK]);

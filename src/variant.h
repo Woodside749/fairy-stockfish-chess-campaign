@@ -77,6 +77,11 @@ struct Variant {
   // Chess Campaign: Dragons (a capture also burns the enemy pieces, not kings, on the next
   // two squares in the direction of the move)
   PieceSet breathTypes = NO_PIECE_SET;
+  // Chess Campaign: Flames (a capture also burns the enemy piece, not a king, on the next
+  // square in the direction of the move) and Suns (every move burns the enemy pieces, not
+  // kings, on the squares around where it lands)
+  PieceSet flameTypes = NO_PIECE_SET;
+  PieceSet sunTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};
