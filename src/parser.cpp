@@ -427,6 +427,7 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     // Chess Campaign: Bombs and Medusas
     parse_attribute("explosiveTypes", v->explosiveTypes, v->pieceToChar);
     parse_attribute("petrifyingTypes", v->petrifyingTypes, v->pieceToChar);
+    parse_attribute("breathTypes", v->breathTypes, v->pieceToChar);
     parse_attribute("doubleStep", v->doubleStep);
     parse_attribute("doubleStepRegionWhite", v->doubleStepRegion[WHITE]);
     parse_attribute("doubleStepRegionBlack", v->doubleStepRegion[BLACK]);

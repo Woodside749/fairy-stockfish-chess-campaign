@@ -1269,6 +1269,9 @@ bool Position::legal(Move m) const {
       return false;
   if (capturer_explodes(m) && !capturer_petrifies(m))
       occupied &= ~square_bb(to);
+  // Chess Campaign: pieces burned by a Dragon are gone too
+  Bitboard burned = burned_by(m);
+  occupied &= ~burned;
 
   // Flying general rule and bikjang
   // In case of bikjang passing is always allowed, even when in check
@@ -1301,7 +1304,7 @@ bool Position::legal(Move m) const {
       janggiCannons ^= to;
 
   // A non-king move is legal if the king is not under attack after the move.
-  return !(attackers_to(square<KING>(us), occupied, ~us, janggiCannons) & ~SquareBB[to]);
+  return !(attackers_to(square<KING>(us), occupied, ~us, janggiCannons) & ~SquareBB[to] & ~burned);
 }
 
 
@@ -1457,6 +1460,13 @@ bool Position::gives_check(Move m) const {
   // Chess Campaign: after a capture by or of a Bomb the capturer is gone, and after
   // capturing a Medusa it is a stone wall; check from the board after the move (lines can
   // open through the captured square)
+  if (burned_by(m) && count<KING>(~sideToMove))
+  {
+      Bitboard occupied = ((pieces() ^ from) | to) & ~burned_by(m);
+      return   (attackers_to(square<KING>(~sideToMove), occupied, sideToMove) & ~square_bb(from))
+            || (attacks_bb(sideToMove, type_of(moved_piece(m)), to, occupied) & square<KING>(~sideToMove));
+  }
+
   if ((capturer_explodes(m) || capturer_petrifies(m)) && count<KING>(~sideToMove))
   {
       Bitboard occupied = (pieces() ^ from) & ~square_bb(to);
@@ -1598,6 +1608,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   Color them = ~us;
   Square from = from_sq(m);
   Square to = to_sq(m);
+  // Chess Campaign: what a Dragon's fire burns, worked out before anything moves
+  Bitboard burned = burned_by(m);
   Piece pc = moved_piece(m);
   Piece captured = piece_on(type_of(m) == EN_PASSANT ? capture_square(to) : to);
   if (to == from)
@@ -2014,7 +2026,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
                           || (var->petrifyingTypes & type_of(captured)));
   // (In variants with Bombs or Medusas this runs for every capture, so that undo_move always
   // finds up-to-date notes; for an ordinary capture nothing is removed.)
-  if (captured && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes))
+  if (captured && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes || var->breathTypes))
   {
       std::memset(st->unpromotedBycatch, 0, sizeof(st->unpromotedBycatch));
       st->demotedBycatch = st->promotedBycatch = 0;
@@ -2025,6 +2037,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       };
       Bitboard blast = blast_on_capture() ? ((attacks_bb<KING>(to) & ((pieces(WHITE) | pieces(BLACK)) ^ pieces(PAWN))) | to)
                        & (pieces() ^ blastImmune) : (var->petrifyOnCaptureTypes & type_of(pc)) || campaignCapture ? square_bb(to) : Bitboard(0);
+      blast |= burned;
       while (blast)
       {
           Square bsq = pop_lsb(blast);
@@ -2185,9 +2198,22 @@ void Position::undo_move(Move m) {
   byTypeBB[ALL_PIECES] ^= st->wallSquares ^ st->previous->wallSquares;
 
   // Add the blast pieces
-  if (st->capturedPiece && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes))
+  if (st->capturedPiece && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes || var->breathTypes))
   {
       Bitboard blast = attacks_bb<KING>(to) | to;
+      // Chess Campaign: the two squares a Dragon's fire reached (its notes say what burned)
+      if (var->breathTypes)
+      {
+          int df = (file_of(to) > file_of(from)) - (file_of(to) < file_of(from));
+          int dr = (rank_of(to) > rank_of(from)) - (rank_of(to) < rank_of(from));
+          for (int i = 1; i <= 2; i++)
+          {
+              int f = int(file_of(to)) + i * df, r = int(rank_of(to)) + i * dr;
+              if (f < FILE_A || f > max_file() || r < RANK_1 || r > max_rank())
+                  break;
+              blast |= make_square(File(f), Rank(r));
+          }
+      }
       while (blast)
       {
           Square bsq = pop_lsb(blast);

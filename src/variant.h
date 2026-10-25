@@ -74,6 +74,9 @@ struct Variant {
   // (a piece that captures one turns to stone)
   PieceSet explosiveTypes = NO_PIECE_SET;
   PieceSet petrifyingTypes = NO_PIECE_SET;
+  // Chess Campaign: Dragons (a capture also burns the enemy pieces, not kings, on the next
+  // two squares in the direction of the move)
+  PieceSet breathTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};

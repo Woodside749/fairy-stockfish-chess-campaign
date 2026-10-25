@@ -44,3 +44,16 @@ Checks after such captures are worked out from the board after the move, and the
 exchange evaluation treats the capturer as lost (like the existing petrifyOnCaptureTypes).
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
+
+### 2026-10-25: Dragons
+
+New variant setting `breathTypes` (piece letters): when such a piece (Chess Campaign's
+Dragon) captures, it also removes the opponent's pieces, except the king, on the next two
+squares beyond the captured piece in the direction of the move (both squares, even if the
+first one is occupied; the board edge stops it). Its own pieces are never harmed.
+
+Legality, checks and undoing the move all account for the burned squares: a burn that opens
+a line onto the mover's own king is illegal, and one that opens a line onto the opponent's
+king gives check.
+
+Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.

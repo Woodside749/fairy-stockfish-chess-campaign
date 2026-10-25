@@ -8,6 +8,7 @@ Changes (on the `chess-campaign` branch, see [CHESS-CAMPAIGN.md](CHESS-CAMPAIGN.
 
 * 2026-10-21: a separate zone for piece promotions (`piecePromotionRegionWhite` / `piecePromotionRegionBlack`), so pieces with a `promotedPieceType` can promote somewhere other than the pawns' promotion zone. Variants that don't set it behave exactly as before.
 * 2026-10-21: Bombs and Medusas (`explosiveTypes`, `petrifyingTypes`): a capture by or of a Bomb also removes the capturer; a piece that captures a Medusa turns to stone. Variants that don't set them behave exactly as before.
+* 2026-10-25: Dragons (`breathTypes`): a capture by a Dragon also removes the opponent's pieces (not the king) on the next two squares in the direction of the move. Variants that don't set it behave exactly as before.
 
 The original README follows.
 

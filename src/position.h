@@ -143,6 +143,7 @@ public:
   bool blast_on_capture() const;
   bool capturer_explodes(Move m) const;
   bool capturer_petrifies(Move m) const;
+  Bitboard burned_by(Move m) const;
   PieceSet blast_immune_types() const;
   PieceSet mutually_immune_types() const;
   EndgameEval endgame_eval() const;
@@ -521,6 +522,25 @@ inline bool Position::capturer_explodes(Move m) const {
 // Chess Campaign: whether a capture turns the capturer to stone (it captures a Medusa)
 inline bool Position::capturer_petrifies(Move m) const {
   return capture(m) && type_of(m) != EN_PASSANT && (var->petrifyingTypes & type_of(piece_on(to_sq(m))));
+}
+
+// Chess Campaign: the enemy pieces (not kings) a Dragon's capture burns: those on the next
+// two squares past the captured piece, in the direction of the move
+inline Bitboard Position::burned_by(Move m) const {
+  if (!var->breathTypes || !capture(m) || type_of(m) == DROP || !(var->breathTypes & type_of(moved_piece(m))))
+      return Bitboard(0);
+  Square from = from_sq(m), to = to_sq(m);
+  int df = (file_of(to) > file_of(from)) - (file_of(to) < file_of(from));
+  int dr = (rank_of(to) > rank_of(from)) - (rank_of(to) < rank_of(from));
+  Bitboard b = 0;
+  for (int i = 1; i <= 2; i++)
+  {
+      int f = int(file_of(to)) + i * df, r = int(rank_of(to)) + i * dr;
+      if (f < FILE_A || f > max_file() || r < RANK_1 || r > max_rank())
+          break;
+      b |= make_square(File(f), Rank(r));
+  }
+  return b & pieces(~color_of(moved_piece(m))) & ~pieces(KING);
 }
 
 inline bool Position::blast_on_capture() const {
