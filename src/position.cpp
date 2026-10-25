@@ -869,6 +869,11 @@ Bitboard Position::slider_blockers(Bitboard sliders, Square s, Bitboard& pinners
       for (PieceSet ps = piece_types(); ps;)
       {
           PieceType pt = pop_lsb(ps);
+          // Chess Campaign: a crooked bishop can reach a square along two paths, so the
+          // squares "between" are not one line; its checks are always worked out in full
+          // (it is a non-sliding rider), so it is left out here
+          if (AttackRiderTypes[pt] & RIDER_CROOKED_BISHOP)
+              continue;
           Bitboard b = sliders & (PseudoAttacks[~c][pt][s] ^ LeaperAttacks[~c][pt][s]) & pieces(c, pt);
           if (b)
           {
@@ -1485,7 +1490,8 @@ bool Position::gives_check(Move m) const {
           if (attacks_bb(sideToMove, pt, to, occupied) & attacks_bb(sideToMove, pt, to, occupied & ~janggiCannons) & square<KING>(~sideToMove))
               return true;
       }
-      else if (AttackRiderTypes[pt] & (HOPPING_RIDERS | ASYMMETRICAL_RIDERS))
+      // (Chess Campaign: also a crooked bishop, whose path may lead through the square it left)
+      else if (AttackRiderTypes[pt] & (HOPPING_RIDERS | ASYMMETRICAL_RIDERS | RIDER_CROOKED_BISHOP))
       {
           if (attacks_bb(sideToMove, pt, to, occupied) & square<KING>(~sideToMove))
               return true;

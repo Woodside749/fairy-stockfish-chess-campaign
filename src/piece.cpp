@@ -60,6 +60,7 @@ namespace {
       bool hopper = false;
       bool rider = false;
       bool lame = false;
+      bool crooked = false;
       bool initial = false;
       int distance = 0;
       std::vector<std::string> prelimDirections = {};
@@ -80,6 +81,9 @@ namespace {
           // Lame leaper
           else if (c == 'n')
               lame = true;
+          // Chess Campaign: crooked (zigzag) bishop, zB
+          else if (c == 'z')
+              crooked = true;
           // Initial move
           else if (c == 'i')
               initial = true;
@@ -100,6 +104,26 @@ namespace {
                   }
               }
               prelimDirections.push_back(std::string(2, c));
+          }
+          // Chess Campaign: a crooked bishop slides diagonally, switching between the two
+          // diagonals at every step (all zigzags: up, down and to both sides)
+          else if (crooked && c == 'B')
+          {
+              if (moveModalities.size() == 0)
+              {
+                  moveModalities.push_back(MODALITY_QUIET);
+                  moveModalities.push_back(MODALITY_CAPTURE);
+              }
+              for (auto modality : moveModalities)
+                  p->crooked[initial][modality] = true;
+              moveModalities.clear();
+              prelimDirections.clear();
+              hopper = false;
+              rider = false;
+              lame = false;
+              crooked = false;
+              initial = false;
+              distance = 0;
           }
           // Move atom
           else if (leaperAtoms.find(c) != leaperAtoms.end() || riderAtoms.find(c) != riderAtoms.end())
@@ -172,6 +196,7 @@ namespace {
               hopper = false;
               rider = false;
               lame = false;
+              crooked = false;
               initial = false;
               distance = 0;
           }

@@ -54,6 +54,7 @@ std::set<string> standard_variants = {
 
 void init_variant(const Variant* v) {
     pieceMap.init(v);
+    Bitboards::set_crooked_board(v->maxFile, v->maxRank);
     Bitboards::init_pieces();
 }
 

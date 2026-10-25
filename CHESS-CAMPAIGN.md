@@ -72,3 +72,22 @@ In variants with fire, the bookkeeping for removed pieces now runs for every mov
 captures), so that undoing a move always restores the right pieces.
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
+
+### 2026-10-25: the crooked bishop (Lightning)
+
+A new Betza modifier `z` for the bishop: `zB` is a crooked bishop. It slides diagonally and
+switches to the other diagonal at every step (one diagonal step, then a turn of 90 degrees,
+and so on), zigzagging up, down or to either side, until it leaves the board or reaches an
+occupied square, which it may capture. Chess Campaign's Lightning moves like this.
+
+* Its moves are worked out step by step (a new rider type, `RIDER_CROOKED_BISHOP`) on the
+  variant's real board size, so it never steps off the edge and back on again.
+* It is a non-sliding rider, so its checks and the replies to them are always worked out in
+  full. It can reach a square along two different paths, so it is left out of the quick
+  pin detection (which assumes one straight line); legality is still checked in full.
+* A direct check is worked out from the board after the move (its path may lead through the
+  square it came from).
+* Its estimated value counts it like a bishop.
+
+Files: `types.h`, `piece.h`, `piece.cpp`, `bitboard.h`, `bitboard.cpp`, `ucioption.cpp`,
+`position.cpp`, `psqt.cpp`.

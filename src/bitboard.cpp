@@ -227,6 +227,46 @@ std::string Bitboards::pretty(Bitboard b) {
   return s;
 }
 
+// Chess Campaign: the board the crooked bishop zigzags on (it may not step off the board's
+// edge and back on again, so it needs the variant's real size, not the bitboard's)
+namespace {
+  File CrookedMaxFile = FILE_MAX;
+  Rank CrookedMaxRank = RANK_MAX;
+}
+
+void Bitboards::set_crooked_board(File maxFile, Rank maxRank) {
+  CrookedMaxFile = maxFile;
+  CrookedMaxRank = maxRank;
+}
+
+/// crooked_bishop_attacks() returns the squares a crooked bishop on `s` reaches: it slides
+/// diagonally and switches to the other diagonal at every step, zigzagging up, down or to
+/// either side, until it leaves the board or reaches an occupied square (which it attacks).
+
+Bitboard crooked_bishop_attacks(Square s, Bitboard occupied) {
+  Bitboard attacks = 0;
+  for (int df : {-1, 1})
+      for (int dr : {-1, 1})
+          for (bool sideways : {false, true})
+          {
+              int f = file_of(s), r = rank_of(s);
+              for (int i = 0; ; i++)
+              {
+                  // Every second step turns: an upward or downward zigzag flips the file
+                  // step, a sideways one the rank step
+                  f += (i % 2 && !sideways) ? -df : df;
+                  r += (i % 2 && sideways) ? -dr : dr;
+                  if (f < FILE_A || f > CrookedMaxFile || r < RANK_1 || r > CrookedMaxRank)
+                      break;
+                  Square to = make_square(File(f), Rank(r));
+                  attacks |= to;
+                  if (occupied & to)
+                      break;
+              }
+          }
+  return attacks;
+}
+
 /// Bitboards::init_pieces() initializes piece move/attack bitboards and rider types
 
 void Bitboards::init_pieces() {
@@ -267,6 +307,8 @@ void Bitboards::init_pieces() {
                   if (HorseDirections.find(d) != HorseDirections.end())
                       riderTypes |= RIDER_NIGHTRIDER;
               }
+              if (pi->crooked[initial][modality])
+                  riderTypes |= RIDER_CROOKED_BISHOP;
               for (auto const& [d, limit] : pi->hopper[initial][modality])
               {
                   if (RookDirectionsH.find(d) != RookDirectionsH.end())
@@ -303,6 +345,8 @@ void Bitboards::init_pieces() {
                       }
                       pseudo |= sliding_attack<RIDER>(pi->slider[initial][modality], s, 0, c);
                       pseudo |= sliding_attack<HOPPER_RANGE>(pi->hopper[initial][modality], s, 0, c);
+                      if (pi->crooked[initial][modality])
+                          pseudo |= crooked_bishop_attacks(s, 0);
                   }
               }
           }

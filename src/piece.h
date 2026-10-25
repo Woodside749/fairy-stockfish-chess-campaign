@@ -37,6 +37,8 @@ struct PieceInfo {
   std::map<Direction, int> steps[2][MOVE_MODALITY_NB] = {};
   std::map<Direction, int> slider[2][MOVE_MODALITY_NB] = {};
   std::map<Direction, int> hopper[2][MOVE_MODALITY_NB] = {};
+  // Chess Campaign: crooked bishop moves (zB)
+  bool crooked[2][MOVE_MODALITY_NB] = {};
 };
 
 struct PieceMap : public std::map<PieceType, const PieceInfo*> {

@@ -174,6 +174,9 @@ Value piece_value(Phase phase, PieceType pt)
             // Hoppers are more useful with more pieces on the board
             + (phase == MG ? 100 :  80) * pi->hopper[0][MODALITY_CAPTURE].size()
             + (phase == MG ?  85 :  60) * pi->hopper[0][MODALITY_QUIET].size()
+            // Chess Campaign: a crooked bishop, valued like a bishop's four diagonals
+            + (phase == MG ? 185 : 185) * 4 * pi->crooked[0][MODALITY_CAPTURE]
+            + (phase == MG ?  55 :  45) * 4 * pi->crooked[0][MODALITY_QUIET]
             // Rook sliding directions are more valuable, especially in endgame
             + (phase == MG ?  15 :  15) * std::count_if(pi->slider[0][MODALITY_CAPTURE].begin(), pi->slider[0][MODALITY_CAPTURE].end(), [](const std::pair<const Direction, int>& d) { return std::abs(d.first) == NORTH || std::abs(d.first) == 1; })
             + (phase == MG ?  30 :  50) * std::count_if(pi->slider[0][MODALITY_QUIET].begin(), pi->slider[0][MODALITY_QUIET].end(), [](const std::pair<const Direction, int>& d) { return std::abs(d.first) == NORTH || std::abs(d.first) == 1; });

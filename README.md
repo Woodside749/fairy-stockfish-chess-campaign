@@ -10,6 +10,7 @@ Changes (on the `chess-campaign` branch, see [CHESS-CAMPAIGN.md](CHESS-CAMPAIGN.
 * 2026-10-21: Bombs and Medusas (`explosiveTypes`, `petrifyingTypes`): a capture by or of a Bomb also removes the capturer; a piece that captures a Medusa turns to stone. Variants that don't set them behave exactly as before.
 * 2026-10-25: Dragons (`breathTypes`): a capture by a Dragon also removes the opponent's pieces (not the king) on the next two squares in the direction of the move. Variants that don't set it behave exactly as before.
 * 2026-10-25: Flames and Suns (`flameTypes`, `sunTypes`): a capture by a Flame also removes the opponent's piece (not the king) on the next square in the direction of the move; every move of a Sun removes the opponent's pieces (not the king) around the square it lands on. Variants that don't set them behave exactly as before.
+* 2026-10-25: the crooked bishop (`zB`, Chess Campaign's Lightning): slides diagonally and switches to the other diagonal at every step. Pieces that don't use `z` behave exactly as before.
 
 The original README follows.
 
