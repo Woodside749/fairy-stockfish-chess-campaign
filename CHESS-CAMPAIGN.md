@@ -119,3 +119,13 @@ New variant settings `immuneTypes` and `shieldTypes` (piece letters):
   can always be captured.
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
+
+### 2026-10-25: pieces that rest after moving (the Devil)
+
+New variant setting `cooldownTypes` (piece letters): if a side's last move was made by one of
+these pieces (Chess Campaign's Devil), none of them may move on that side's next turn. Each
+move's state remembers whether it was made by such a piece (a null move never is). The
+position alone (FEN) doesn't show this, so a GUI should give the engine the earlier moves,
+e.g. `position fen <fen two moves ago> moves <move> <move>`.
+
+Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.

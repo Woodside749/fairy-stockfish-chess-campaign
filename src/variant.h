@@ -88,6 +88,9 @@ struct Variant {
   // burned (shield pieces don't shield each other)
   PieceSet immuneTypes = NO_PIECE_SET;
   PieceSet shieldTypes = NO_PIECE_SET;
+  // Chess Campaign: pieces that must rest after moving (the Devil): if a side's last move
+  // was made by one of them, none of them may move this turn
+  PieceSet cooldownTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};

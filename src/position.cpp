@@ -1074,6 +1074,12 @@ bool Position::legal(Move m) const {
       && has_capture())
       return false;
 
+  // Chess Campaign: a piece that rests after moving (the Devil) can't move if its side's
+  // last move was made by such a piece (that move's state is the one before the opponent's)
+  if (   var->cooldownTypes && type_of(m) != DROP && (var->cooldownTypes & type_of(moved_piece(m)))
+      && st->previous && st->previous->cooldownMove)
+      return false;
+
   // Chess Campaign: a piece next to its side's Angel (a shield piece) can't be captured
   if (   var->shieldTypes && type_of(m) != CASTLING && capture(m)
       && (shielded(~us) & (type_of(m) == EN_PASSANT ? capture_square(to) : to)))
@@ -1622,6 +1628,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Chess Campaign: what a Dragon's, Flame's or Sun's fire burns, worked out before anything moves
   Bitboard burned = burned_by(m);
   Piece pc = moved_piece(m);
+  st->cooldownMove = var->cooldownTypes && type_of(m) != DROP && (var->cooldownTypes & type_of(pc));
   Piece captured = piece_on(type_of(m) == EN_PASSANT ? capture_square(to) : to);
   if (to == from)
   {
@@ -2389,6 +2396,7 @@ void Position::do_null_move(StateInfo& newSt) {
 
   newSt.previous = st;
   st = &newSt;
+  st->cooldownMove = false; // Chess Campaign: passing is no move by a resting piece
 
   st->dirtyPiece.dirty_num = 0;
   st->dirtyPiece.piece[0] = NO_PIECE; // Avoid checks in UpdateAccumulator()

@@ -83,6 +83,7 @@ struct StateInfo {
   bool       pass;
   Move       move;
   int        repetition;
+  bool       cooldownMove; // Chess Campaign: this move was made by a piece that must rest next turn
 
   // Used by NNUE
   Eval::NNUE::Accumulator accumulator;
