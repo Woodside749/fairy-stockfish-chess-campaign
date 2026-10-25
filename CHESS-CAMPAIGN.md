@@ -134,8 +134,8 @@ Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
 
 New variant setting `zombieTypes` (piece letters): when such a piece (Chess Campaign's
 Zombie) captures, the captured piece (as it was before any promotion) goes to the capturer's
-pocket, to be dropped later; captured pawns, pawn types and promoted pawns don't. Other
-pieces' captures are unaffected. Used with `pieceDrops = true` and a drop region (Chess
+pocket, to be dropped later; captures of `zombieExcludedTypes` (piece letters, default:
+pawns) and of promoted pawns don't. Other pieces' captures are unaffected. Used with `pieceDrops = true` and a drop region (Chess
 Campaign: each side's first rank).
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.

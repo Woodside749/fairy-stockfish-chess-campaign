@@ -14,7 +14,7 @@ Changes (on the `chess-campaign` branch, see [CHESS-CAMPAIGN.md](CHESS-CAMPAIGN.
 * 2026-10-25: the rose (`qN`, Chess Campaign's Rose): knight jumps turning around a circle. Pieces that don't use `q` behave exactly as before.
 * 2026-10-25: immune pieces and shields (`immuneTypes`, `shieldTypes`, Chess Campaign's Angel and Devil): immune pieces are never burned and survive capturing Bombs and Medusas; pieces next to their side's shield piece can't be captured or burned. Variants that don't set them behave exactly as before.
 * 2026-10-25: pieces that rest after moving (`cooldownTypes`, Chess Campaign's Devil): after such a piece moves, none of them may move on that side's next turn. Variants that don't set it behave exactly as before.
-* 2026-10-25: Zombies (`zombieTypes`): a piece captured by a Zombie (not a pawn) goes to the capturer's pocket, to be dropped later. Variants that don't set it behave exactly as before.
+* 2026-10-25: Zombies (`zombieTypes`, `zombieExcludedTypes`): a piece captured by a Zombie goes to the capturer's pocket, to be dropped later, unless it is one of the excluded types (default: pawns). Variants that don't set it behave exactly as before.
 
 The original README follows.
 

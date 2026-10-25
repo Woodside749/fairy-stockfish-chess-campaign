@@ -92,9 +92,11 @@ struct Variant {
   // was made by one of them, none of them may move this turn
   PieceSet cooldownTypes = NO_PIECE_SET;
   // Chess Campaign: pieces whose captures go to the capturer's pocket, for dropping later
-  // (the Zombie); captured pawns (and promoted pawns) don't, and other captures don't either
-  // (use with pieceDrops and a drop region)
+  // (the Zombie), except captures of zombieExcludedTypes (default: pawns) and of promoted
+  // pawns, which just die; other pieces' captures are unaffected (use with pieceDrops and a
+  // drop region)
   PieceSet zombieTypes = NO_PIECE_SET;
+  PieceSet zombieExcludedTypes = piece_set(PAWN);
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};

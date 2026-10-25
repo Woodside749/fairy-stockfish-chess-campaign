@@ -1711,11 +1711,10 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           }
       }
       // Chess Campaign: a Zombie's capture puts the captured piece (as it was before any
-      // promotion) in the capturer's pocket; pawns, pawn types and promoted pawns just die
+      // promotion) in the capturer's pocket; zombieExcludedTypes and promoted pawns just die
       else if (   var->zombieTypes && (var->zombieTypes & type_of(pc))
                && (!capturedPromoted || unpromotedCaptured)
-               && !(var->promotionPawnTypes[them] & type_of(unpromotedCaptured ? unpromotedCaptured : captured))
-               && type_of(unpromotedCaptured ? unpromotedCaptured : captured) != PAWN)
+               && !(var->zombieExcludedTypes & type_of(unpromotedCaptured ? unpromotedCaptured : captured)))
       {
           Piece pieceToHand = ~(unpromotedCaptured ? unpromotedCaptured : captured);
           add_to_hand(pieceToHand);
