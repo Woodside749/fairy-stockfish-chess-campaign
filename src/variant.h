@@ -104,6 +104,9 @@ struct Variant {
   // back to its owner's pocket, to be dropped again (use with pieceDrops and a drop region).
   // One that turns to stone stays a wall.
   PieceSet undeadTypes = NO_PIECE_SET;
+  // Chess Campaign: Mimics: when one captures (and survives), it becomes the piece it
+  // captured, in its own colour, for good
+  PieceSet mimicTypes = NO_PIECE_SET;
   bool doubleStep = true;
   Bitboard doubleStepRegion[COLOR_NB] = {Rank2BB, Rank7BB};
   Bitboard tripleStepRegion[COLOR_NB] = {};

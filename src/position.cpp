@@ -1486,6 +1486,14 @@ bool Position::gives_check(Move m) const {
   // Chess Campaign: the squares our pieces see through after the move (our Ghosts)
   Bitboard seeThrough = ghosts_after(sideToMove, m);
 
+  // Chess Campaign: a Mimic that captures checks as the piece it becomes
+  if (mimic_copies(m))
+  {
+      Bitboard occ = (pieces() ^ from) | to;
+      return   (attackers_to(square<KING>(~sideToMove), occ, sideToMove, byTypeBB[JANGGI_CANNON], seeThrough) & ~square_bb(from))
+            || (attacks_bb(sideToMove, type_of(piece_on(to)), to, occ & ~seeThrough) & square<KING>(~sideToMove));
+  }
+
   // Chess Campaign: after a capture by or of a Bomb the capturer is gone, and after
   // capturing a Medusa it is a stone wall; check from the board after the move (lines can
   // open through the captured square)
@@ -1645,6 +1653,8 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   Piece pc = moved_piece(m);
   st->cooldownMove = var->cooldownTypes && type_of(m) != DROP && (var->cooldownTypes & type_of(pc));
   st->zombieGain = NO_PIECE;
+  st->mimicPiece = NO_PIECE;
+  bool mimicCopies = mimic_copies(m);
   Piece captured = piece_on(type_of(m) == EN_PASSANT ? capture_square(to) : to);
   if (to == from)
   {
@@ -2086,6 +2096,34 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
       st->gatesBB[them] ^= square<KING>(them);
 
 
+  // Chess Campaign: a Mimic that captured becomes the piece it captured, in its own colour
+  if (mimicCopies)
+  {
+      Piece mimic = piece_on(to);
+      Piece copy = make_piece(us, type_of(captured));
+      st->mimicPiece = mimic;
+      remove_piece(to);
+      put_piece(copy, to);
+
+      if (Eval::useNNUE)
+      {
+          dp.to[0] = SQ_NONE;
+          dp.handPiece[0] = NO_PIECE;
+          dp.piece[dp.dirty_num] = copy;
+          dp.handPiece[dp.dirty_num] = NO_PIECE;
+          dp.from[dp.dirty_num] = SQ_NONE;
+          dp.to[dp.dirty_num] = to;
+          dp.dirty_num++;
+      }
+
+      k ^= Zobrist::psq[mimic][to] ^ Zobrist::psq[copy][to];
+      if (type_of(copy) == PAWN)
+          st->pawnKey ^= Zobrist::psq[copy][to];
+      st->materialKey ^=  Zobrist::psq[copy][pieceCount[copy] - 1]
+                        ^ Zobrist::psq[mimic][pieceCount[mimic]];
+      st->nonPawnMaterial[us] += (type_of(copy) != PAWN ? PieceValue[MG][copy] : VALUE_ZERO) - PieceValue[MG][mimic];
+  }
+
   // Remove the blast pieces
   // (Chess Campaign: also the capturer of or by a Bomb, and the capturer of a Medusa)
   bool campaignCapture = captured && type_of(m) != EN_PASSANT && !(var->immuneTypes & type_of(pc))
@@ -2337,6 +2375,14 @@ void Position::undo_move(Move m) {
       board[gating_square(m)] = NO_PIECE;
       add_to_hand(gating_piece);
       st->gatesBB[us] |= gating_square(m);
+  }
+
+  // Chess Campaign: turn a Mimic's copy back into the Mimic
+  if (st->mimicPiece)
+  {
+      remove_piece(to);
+      pc = st->mimicPiece;
+      put_piece(pc, to);
   }
 
   if (type_of(m) == PROMOTION)

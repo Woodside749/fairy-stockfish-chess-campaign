@@ -85,6 +85,7 @@ struct StateInfo {
   int        repetition;
   bool       cooldownMove; // Chess Campaign: this move was made by a piece that must rest next turn
   Piece      zombieGain;   // Chess Campaign: the piece the capture put in a pocket (a Zombie's catch, or an Undead going home)
+  Piece      mimicPiece;   // Chess Campaign: the Mimic that turned into the piece it captured
 
   // Used by NNUE
   Eval::NNUE::Accumulator accumulator;
@@ -146,6 +147,7 @@ public:
   bool capturer_explodes(Move m) const;
   bool capturer_petrifies(Move m) const;
   bool campaign_fire() const;
+  bool mimic_copies(Move m) const;
   Bitboard immune_pieces() const;
   Bitboard shielded(Color c) const;
   Bitboard burned_by(Move m) const;
@@ -534,6 +536,14 @@ inline bool Position::capturer_explodes(Move m) const {
 inline bool Position::capturer_petrifies(Move m) const {
   return capture(m) && type_of(m) != EN_PASSANT && !(var->immuneTypes & type_of(moved_piece(m)))
       && (var->petrifyingTypes & type_of(piece_on(to_sq(m))));
+}
+
+// Chess Campaign: whether the move is a Mimic's capture that turns it into the captured piece
+// (not when it blows up or turns to stone)
+inline bool Position::mimic_copies(Move m) const {
+  return   var->mimicTypes && type_of(m) == NORMAL && capture(m)
+        && (var->mimicTypes & type_of(moved_piece(m)))
+        && !capturer_explodes(m) && !capturer_petrifies(m);
 }
 
 // Chess Campaign: the pieces no fire can burn: kings and immune pieces (the Angel and Devil)
@@ -1381,7 +1391,8 @@ inline Bitboard Position::ghosts_after(Color c, Move m) const {
       PieceType after = type_of(m) == PROMOTION ? promotion_type(m)
                       : type_of(m) == PIECE_PROMOTION ? promoted_piece_type(type_of(moved_piece(m)))
                       : type_of(m) == DROP ? in_hand_piece_type(m)
-                                           : type_of(moved_piece(m));
+                      : mimic_copies(m) ? type_of(piece_on(to))
+                                        : type_of(moved_piece(m));
       if ((var->ghostTypes & after) && type_of(m) != CASTLING && !capturer_explodes(m) && !capturer_petrifies(m))
           g |= to;
   }

@@ -437,6 +437,7 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
     parse_attribute("zombieExcludedTypes", v->zombieExcludedTypes, v->pieceToChar);
     parse_attribute("ghostTypes", v->ghostTypes, v->pieceToChar);
     parse_attribute("undeadTypes", v->undeadTypes, v->pieceToChar);
+    parse_attribute("mimicTypes", v->mimicTypes, v->pieceToChar);
     parse_attribute("doubleStep", v->doubleStep);
     parse_attribute("doubleStepRegionWhite", v->doubleStepRegion[WHITE]);
     parse_attribute("doubleStepRegionBlack", v->doubleStepRegion[BLACK]);

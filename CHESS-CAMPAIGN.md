@@ -167,3 +167,12 @@ to stone stays a wall. Used with `pieceDrops = true` and a drop region (Chess Ca
 side's first rank).
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
+
+### 2026-10-25: Mimics
+
+New variant setting `mimicTypes` (piece letters): when such a piece (Chess Campaign's Mimic)
+captures and survives (it doesn't blow up or turn to stone), it becomes the piece it
+captured, in its own colour, for good (even a pawn). Giving check is worked out for the piece
+it becomes, and where Ghosts are after the move counts a Mimic that became a Ghost.
+
+Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
