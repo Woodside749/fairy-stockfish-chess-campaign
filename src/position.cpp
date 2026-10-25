@@ -2254,6 +2254,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // Chess Campaign: put down a Rock Magician's rock
   if (rock_move(m))
   {
+      st->rocksPlaced[us]++;
       st->wallSquares |= gating_square(m);
       byTypeBB[ALL_PIECES] |= gating_square(m);
       k ^= Zobrist::wall[gating_square(m)];

@@ -192,6 +192,9 @@ Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`.
   and two of them in a row don't end the game (unlike two passes).
 * 2026-10-25, later: a rock may not complete a cage of walls (rocks, stone walls, the
   board's edge) around either king.
+* 2026-10-25, later: `rockLimit` (a number, 0 = no limit): how many rocks each side may put
+  down in a game. A FEN doesn't show the count, so it comes from the moves played (a GUI
+  should send the whole game: `position fen <start> moves ...`).
 
 Files: `types.h`, `piece.h`, `piece.cpp`, `bitboard.h`, `bitboard.cpp`, `psqt.cpp`,
 `variant.h`, `parser.cpp`, `position.h`, `position.cpp`, `movegen.cpp`, `uci.cpp`,

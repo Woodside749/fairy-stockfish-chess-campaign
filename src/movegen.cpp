@@ -461,7 +461,8 @@ namespace {
         }
 
         // Chess Campaign: a Rock Magician may use the move to put a rock on an empty square next to it
-        if (pos.rock_types() && Type != CAPTURES && Type != QUIET_CHECKS)
+        if (   pos.rock_types() && Type != CAPTURES && Type != QUIET_CHECKS
+            && (!pos.variant()->rockLimit || pos.state()->rocksPlaced[Us] < pos.variant()->rockLimit))
             for (PieceSet ps = pos.rock_types(); ps;)
                 for (Bitboard magicians = pos.pieces(Us, pop_lsb(ps)); magicians;)
                 {
