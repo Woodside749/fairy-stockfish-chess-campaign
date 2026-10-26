@@ -88,7 +88,8 @@ struct StateInfo {
   Piece      zombieGain;   // Chess Campaign: the piece the capture put in a pocket (a Zombie's catch, or an Undead going home)
   Piece      mimicPiece;   // Chess Campaign: the Mimic that turned into the piece it captured
   bool       shot;         // Chess Campaign: an Archer's shot (the archer stayed where it was)
-  bool       jumped;       // Chess Campaign: a Checker's jump (captureSquare is the square jumped over)
+  bool       jumped;       // Chess Campaign: a Checker's jump (captureSquare is one square jumped over)
+  Bitboard   chainJumped;  // Chess Campaign: the other squares a Checker's chain of jumps jumped over
 
   // Used by NNUE
   Eval::NNUE::Accumulator accumulator;
@@ -153,7 +154,9 @@ public:
   bool mimic_copies(Move m) const;
   bool shooting(Move m) const;
   bool checker_jump(Move m) const;
-  Square jumped_square(Move m) const { return Square((int(from_sq(m)) + int(to_sq(m))) / 2); }
+  Bitboard checker_path(Move m) const;
+  void checker_chains(Square from, Square s, Bitboard jumped, Bitboard enemies, Square target, Bitboard& landings, Bitboard& best) const;
+  Bitboard checker_landings(Square from) const;
   PieceSet checker_types() const { return var->checkerTypes; }
   Bitboard immune_pieces() const;
   Bitboard shielded(Color c) const;
@@ -540,7 +543,7 @@ inline bool Position::shooting(Move m) const {
         && (var->shooterTypes & type_of(moved_piece(m)));
 }
 
-// Chess Campaign: a Checker's jump over an enemy piece (see jumped_square)
+// Chess Campaign: a Checker's jump (or chain of jumps) over enemy pieces (see checker_path)
 inline bool Position::checker_jump(Move m) const {
   return   var->checkerTypes && type_of(m) == SPECIAL && from_sq(m) != to_sq(m)
         && (var->checkerTypes & type_of(moved_piece(m)));

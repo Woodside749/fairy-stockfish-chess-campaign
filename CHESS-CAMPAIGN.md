@@ -243,3 +243,14 @@ side's shield pieces protect. Burning one's own blocker can't expose one's own k
 move is illegal).
 
 Files: `variant.h`, `parser.cpp`, `position.h`.
+
+### 2026-10-26: chains of jumps (the Checker)
+
+A piece of `checkerTypes` (Chess Campaign's Checker) may keep jumping after a jump, like in
+draughts: from where it lands it may jump over another enemy piece (never over a king, a piece
+the enemy's shield piece protects, or the same piece twice), and it may stop after any jump.
+A move goes from the start square to the square the chain ends on; when several chains end
+there, the one jumping over the most pieces is played (the first one found if several are as
+long). One jumped piece is the move's capture, the others are removed like burned pieces.
+
+Files: `position.h`, `position.cpp`, `movegen.cpp`.

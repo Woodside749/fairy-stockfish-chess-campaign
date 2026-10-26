@@ -462,19 +462,15 @@ namespace {
         }
 
         // Chess Campaign: a Checker may jump diagonally over an enemy piece (not a king) next to
-        // it onto the empty square behind it, capturing it
+        // it onto the empty square behind it, capturing it, and keep jumping (a chain of jumps,
+        // see Position::checker_chains); one move for every square a chain can end on
         if (pos.checker_types() && (Type == CAPTURES || Type == NON_EVASIONS || Type == EVASIONS))
             for (PieceSet ps = pos.checker_types(); ps;)
                 for (Bitboard checkers = pos.pieces(Us, pop_lsb(ps)); checkers;)
                 {
                     Square s = pop_lsb(checkers);
-                    for (Bitboard landings = attacks_bb<ALFIL>(s) & pos.board_bb() & ~pos.pieces(); landings;)
-                    {
-                        Square land = pop_lsb(landings);
-                        Square over = Square((int(s) + int(land)) / 2);
-                        if ((pos.pieces(~Us) & over) && !(pos.pieces(KING) & over))
-                            *moveList++ = make<SPECIAL>(s, land);
-                    }
+                    for (Bitboard landings = pos.checker_landings(s); landings;)
+                        *moveList++ = make<SPECIAL>(s, pop_lsb(landings));
                 }
 
         // Chess Campaign: a Rock Magician may use the move to put a rock on an empty square next to it

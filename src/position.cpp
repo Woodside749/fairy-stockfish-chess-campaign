@@ -1102,7 +1102,7 @@ bool Position::legal(Move m) const {
 
   // Chess Campaign: a piece next to its side's Angel (a shield piece) can't be captured
   if (   var->shieldTypes && type_of(m) != CASTLING && capture(m)
-      && (shielded(~us) & (type_of(m) == EN_PASSANT ? capture_square(to) : checker_jump(m) ? jumped_square(m) : to)))
+      && (shielded(~us) & (type_of(m) == EN_PASSANT ? square_bb(capture_square(to)) : checker_jump(m) ? checker_path(m) : square_bb(to))))
       return false;
 
   // Illegal non-drop moves
@@ -1299,12 +1299,12 @@ bool Position::legal(Move m) const {
 
   Bitboard occupied = (type_of(m) != DROP ? pieces() ^ from : pieces()) | to;
   // Chess Campaign: an Archer's shot leaves the archer where it is and the target square empty;
-  // a Checker's jump empties the square it jumps over
-  Square capsq = checker_jump(m) ? jumped_square(m) : to;
+  // a Checker's jumps empty the squares it jumps over
+  Bitboard jumpedOver = checker_jump(m) ? checker_path(m) : Bitboard(0);
   if (shooting(m))
       occupied = pieces() ^ to;
-  else if (checker_jump(m))
-      occupied ^= capsq;
+  else
+      occupied &= ~jumpedOver;
   // Chess Campaign: a new rock blocks lines too
   if (rock_move(m))
       occupied |= gating_square(m);
@@ -1350,7 +1350,7 @@ bool Position::legal(Move m) const {
       janggiCannons ^= to;
 
   // A non-king move is legal if the king is not under attack after the move.
-  return !(attackers_to(square<KING>(us), occupied, ~us, janggiCannons, ghosts_after(~us, m)) & ~SquareBB[to] & ~square_bb(capsq) & ~burned);
+  return !(attackers_to(square<KING>(us), occupied, ~us, janggiCannons, ghosts_after(~us, m)) & ~SquareBB[to] & ~jumpedOver & ~burned);
 }
 
 
@@ -1483,6 +1483,48 @@ bool Position::pseudo_legal(const Move m) const {
 }
 
 
+// Chess Campaign: a Checker's chains of jumps. From `s` it may jump diagonally over an enemy
+// piece (not a king, nor one the enemy's Angel protects) right next to it onto the empty square
+// behind, and from there on jump again, never over the same piece twice; it may stop after any
+// jump. Collects every square a chain can end on (`landings`) and, for `target`, the pieces the
+// longest chain ending there jumps over (`best`; the first one found when several are as long).
+void Position::checker_chains(Square from, Square s, Bitboard jumped, Bitboard enemies,
+                              Square target, Bitboard& landings, Bitboard& best) const {
+  for (Bitboard b = attacks_bb<ALFIL>(s) & board_bb() & (~pieces() | from); b;)
+  {
+      Square land = pop_lsb(b);
+      Square over = Square((int(s) + int(land)) / 2);
+      if (!(enemies & over) || (jumped & over))
+          continue;
+      Bitboard now = jumped | over;
+      if (land != from)
+      {
+          landings |= land;
+          if (land == target && popcount(now) > popcount(best))
+              best = now;
+      }
+      checker_chains(from, land, now, enemies, target, landings, best);
+  }
+}
+
+// Chess Campaign: the squares a Checker on `from` can end a chain of jumps on
+Bitboard Position::checker_landings(Square from) const {
+  Color them = ~color_of(piece_on(from));
+  Bitboard landings = 0, best = 0;
+  checker_chains(from, from, 0, pieces(them) & ~pieces(KING) & ~shielded(them), SQ_NONE, landings, best);
+  return landings;
+}
+
+// Chess Campaign: the pieces a Checker's move jumps over (the longest chain to its square)
+Bitboard Position::checker_path(Move m) const {
+  Square from = from_sq(m);
+  Color them = ~color_of(piece_on(from));
+  Bitboard landings = 0, best = 0;
+  checker_chains(from, from, 0, pieces(them) & ~pieces(KING) & ~shielded(them), to_sq(m), landings, best);
+  return best;
+}
+
+
 /// Position::gives_check() tests whether a pseudo-legal move gives a check
 
 bool Position::gives_check(Move m) const {
@@ -1514,7 +1556,7 @@ bool Position::gives_check(Move m) const {
   // jumps over is gone), check from the board after the move
   if (shooting(m) || checker_jump(m))
   {
-      Bitboard occ = shooting(m) ? pieces() ^ to : ((pieces() ^ from ^ jumped_square(m)) | to);
+      Bitboard occ = shooting(m) ? pieces() ^ to : ((pieces() ^ from ^ checker_path(m)) | to);
       return attackers_to(square<KING>(~sideToMove), occ, sideToMove, byTypeBB[JANGGI_CANNON], seeThrough) & occ;
   }
 
@@ -1688,13 +1730,17 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   st->zombieGain = NO_PIECE;
   st->mimicPiece = NO_PIECE;
   bool mimicCopies = mimic_copies(m);
-  // Chess Campaign: an Archer's shot leaves the archer where it is; a Checker's jump captures
-  // the piece it jumps over
+  // Chess Campaign: an Archer's shot leaves the archer where it is; a Checker's jumps capture
+  // the pieces it jumps over (one as the move's capture, the others like burned pieces)
   bool shoots = shooting(m);
   bool jumps = checker_jump(m);
   st->shot = shoots;
   st->jumped = jumps;
-  Piece captured = piece_on(type_of(m) == EN_PASSANT ? capture_square(to) : jumps ? jumped_square(m) : to);
+  Bitboard jumpedOver = jumps ? checker_path(m) : Bitboard(0);
+  Square jumpSq = jumps ? lsb(jumpedOver) : SQ_NONE;
+  st->chainJumped = jumpedOver & ~square_bb(jumpSq);
+  burned |= st->chainJumped;
+  Piece captured = piece_on(type_of(m) == EN_PASSANT ? capture_square(to) : jumps ? jumpSq : to);
   if (to == from)
   {
       assert((type_of(m) == PROMOTION && sittuyin_promotion()) || (is_pass(m) && (pass(us) || var->wallOrMove )));
@@ -1729,7 +1775,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
       if (jumps)
       {
-          capsq = jumped_square(m);
+          capsq = jumpSq;
           st->captureSquare = capsq;
       }
       else if (type_of(m) == EN_PASSANT)
@@ -2181,7 +2227,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
   // fire for every move, so that undo_move always finds up-to-date notes; for an ordinary
   // move nothing is removed.)
   if (   (captured && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes))
-      || campaign_fire())
+      || campaign_fire() || st->chainJumped)
   {
       if (burned)
           st->rule50 = 0;
@@ -2384,9 +2430,10 @@ void Position::undo_move(Move m) {
 
   // Add the blast pieces
   if (   (st->capturedPiece && (blast_on_capture() || var->petrifyOnCaptureTypes || var->explosiveTypes || var->petrifyingTypes))
-      || campaign_fire())
+      || campaign_fire() || st->chainJumped)
   {
-      Bitboard blast = attacks_bb<KING>(to) | to;
+      // (Chess Campaign: and the pieces a Checker's chain of jumps jumped over)
+      Bitboard blast = attacks_bb<KING>(to) | to | st->chainJumped;
       // Chess Campaign: the squares a Dragon's or Flame's fire may have reached (the notes say
       // what really burned; a Sun's squares are the ones around `to`)
       if (var->breathTypes || var->flameTypes)
