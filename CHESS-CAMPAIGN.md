@@ -234,3 +234,12 @@ A shield piece (the Angel) now protects its side's pieces on every square it att
 the Angel: along its queen lines and knight jumps), not only the squares next to it.
 
 Files: `variant.h`, `position.h`.
+
+### 2026-10-26: friendly fire (the Devil)
+
+New variant setting `friendlyFireTypes` (piece letters): the fire of such a piece (Chess
+Campaign's Devil) also burns its own side's pieces, except kings, immune pieces and pieces its
+side's shield pieces protect. Burning one's own blocker can't expose one's own king (such a
+move is illegal).
+
+Files: `variant.h`, `parser.cpp`, `position.h`.

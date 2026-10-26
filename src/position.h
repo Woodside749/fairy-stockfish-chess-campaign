@@ -619,8 +619,12 @@ inline Bitboard Position::burned_by(Move m) const {
           break;
       b |= make_square(File(f), Rank(r));
   }
-  Color them = ~color_of(moved_piece(m));
-  return b & pieces(them) & ~immune_pieces() & ~shielded(them);
+  Color us = color_of(moved_piece(m)), them = ~us;
+  Bitboard victims = pieces(them) & ~shielded(them);
+  // (Chess Campaign: the Devil's fire burns his own side too)
+  if (var->friendlyFireTypes & pt)
+      victims |= pieces(us) & ~shielded(us);
+  return b & victims & ~immune_pieces();
 }
 
 inline bool Position::blast_on_capture() const {

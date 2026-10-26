@@ -22,6 +22,7 @@ Changes (on the `chess-campaign` branch, see [CHESS-CAMPAIGN.md](CHESS-CAMPAIGN.
 * 2026-10-25: Archers (`shooterTypes`: they capture by shooting and stay on their square) and Checkers (`checkerTypes`: they capture by jumping over an enemy piece, like in draughts). Variants that don't use them behave exactly as before.
 * 2026-10-26: rebirth (`rebirthPieceType`, e.g. Chess Campaign's Phoenix comes back to its owner's pocket as an Egg when it dies). Variants that don't set it behave exactly as before.
 * 2026-10-26: a shield piece now protects its side's pieces on every square it attacks, not only the squares next to it.
+* 2026-10-26: friendly fire (`friendlyFireTypes`): such a piece's fire also burns its own side (Chess Campaign's Devil). Variants that don't set it behave exactly as before.
 
 The original README follows.
 

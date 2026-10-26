@@ -82,6 +82,9 @@ struct Variant {
   // kings, on the squares around where it lands)
   PieceSet flameTypes = NO_PIECE_SET;
   PieceSet sunTypes = NO_PIECE_SET;
+  // Chess Campaign: pieces whose fire also burns their own side's pieces (the Devil); kings,
+  // immune pieces and shielded pieces are still spared
+  PieceSet friendlyFireTypes = NO_PIECE_SET;
   // Chess Campaign: pieces as immune as a king to the effects above (never burned; they
   // capture a Bomb or a Medusa without blowing up or turning to stone), like the Angel and
   // Devil; and shield pieces (the Angel), whose own pieces on the squares they attack can't be
