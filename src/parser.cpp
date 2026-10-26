@@ -415,6 +415,19 @@ Variant* VariantParser<DoCheck>::parse(Variant* v) {
         if (DoCheck && (idx == std::string::npos || idx2 == std::string::npos))
             std::cerr << "promotedPieceType - Invalid piece type: " << token << std::endl;
     }
+    // Chess Campaign: pieces that come back as another piece, like "a:e"
+    const auto& it_rebirth = config.find("rebirthPieceType");
+    if (it_rebirth != config.end())
+    {
+        char token;
+        size_t idx = 0, idx2 = 0;
+        std::stringstream ss(it_rebirth->second);
+        while (   ss >> token && (idx = v->pieceToChar.find(toupper(token))) != std::string::npos && ss >> token
+               && ss >> token && (idx2 = v->pieceToChar.find(toupper(token))) != std::string::npos)
+            v->rebirthPieceType[idx] = PieceType(idx2);
+        if (DoCheck && (idx == std::string::npos || idx2 == std::string::npos))
+            std::cerr << "rebirthPieceType - Invalid piece type: " << token << std::endl;
+    }
     parse_attribute("piecePromotionOnCapture", v->piecePromotionOnCapture);
     parse_attribute("mandatoryPawnPromotion", v->mandatoryPawnPromotion);
     parse_attribute("mandatoryPiecePromotion", v->mandatoryPiecePromotion);

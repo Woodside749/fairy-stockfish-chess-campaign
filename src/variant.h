@@ -104,6 +104,9 @@ struct Variant {
   // back to its owner's pocket, to be dropped again (use with pieceDrops and a drop region).
   // One that turns to stone stays a wall.
   PieceSet undeadTypes = NO_PIECE_SET;
+  // Chess Campaign: pieces that come back as another piece (the Phoenix as an Egg): however one
+  // leaves the board, that piece goes to its owner's pocket (like the Undead)
+  PieceType rebirthPieceType[PIECE_TYPE_NB] = {};
   // Chess Campaign: Mimics: when one captures (and survives), it becomes the piece it
   // captured, in its own colour, for good
   PieceSet mimicTypes = NO_PIECE_SET;

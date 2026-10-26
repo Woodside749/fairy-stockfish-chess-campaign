@@ -218,3 +218,12 @@ New variant settings `shooterTypes` and `checkerTypes` (piece letters):
 * Neither a shot nor a jump makes the shooter or jumper blow up or turn to stone.
 
 Files: `variant.h`, `parser.cpp`, `position.h`, `position.cpp`, `movegen.cpp`.
+
+### 2026-10-26: rebirth (the Phoenix)
+
+New variant setting `rebirthPieceType` (pairs like `c:a`): however such a piece leaves the
+board (captured, burned, blown up; even by a Zombie), the other piece goes to its owner's
+pocket, to be dropped later (Chess Campaign's Phoenix comes back as an Egg, which can hatch
+into a Phoenix again). One that turns to stone stays a wall.
+
+Files: `variant.h`, `parser.cpp`, `position.cpp`.
