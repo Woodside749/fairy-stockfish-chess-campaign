@@ -227,3 +227,10 @@ pocket, to be dropped later (Chess Campaign's Phoenix comes back as an Egg, whic
 into a Phoenix again). One that turns to stone stays a wall.
 
 Files: `variant.h`, `parser.cpp`, `position.cpp`.
+
+### 2026-10-26: a wider shield
+
+A shield piece (the Angel) now protects its side's pieces on every square it attacks (for
+the Angel: along its queen lines and knight jumps), not only the squares next to it.
+
+Files: `variant.h`, `position.h`.

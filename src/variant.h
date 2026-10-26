@@ -84,8 +84,8 @@ struct Variant {
   PieceSet sunTypes = NO_PIECE_SET;
   // Chess Campaign: pieces as immune as a king to the effects above (never burned; they
   // capture a Bomb or a Medusa without blowing up or turning to stone), like the Angel and
-  // Devil; and shield pieces (the Angel), whose own pieces next to them can't be captured or
-  // burned (shield pieces don't shield each other)
+  // Devil; and shield pieces (the Angel), whose own pieces on the squares they attack can't be
+  // captured or burned (shield pieces don't shield each other)
   PieceSet immuneTypes = NO_PIECE_SET;
   PieceSet shieldTypes = NO_PIECE_SET;
   // Chess Campaign: pieces that must rest after moving (the Devil): if a side's last move

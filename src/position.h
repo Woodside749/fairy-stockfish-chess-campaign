@@ -576,18 +576,21 @@ inline Bitboard Position::immune_pieces() const {
   return b;
 }
 
-// Chess Campaign: `c`'s pieces next to one of its shield pieces (the Angel), which can't be
-// captured or burned. Shield pieces don't shield each other.
+// Chess Campaign: `c`'s pieces that one of its shield pieces (the Angel) sees: those on the
+// squares it attacks, which can't be captured or burned. Shield pieces don't shield each other.
 inline Bitboard Position::shielded(Color c) const {
   if (!var->shieldTypes)
       return Bitboard(0);
   Bitboard shields = 0;
   for (PieceSet ps = var->shieldTypes; ps;)
       shields |= pieces(pop_lsb(ps));
-  Bitboard around = 0;
+  Bitboard seen = 0;
   for (Bitboard b = shields & pieces(c); b;)
-      around |= attacks_bb<KING>(pop_lsb(b));
-  return around & pieces(c) & ~shields;
+  {
+      Square s = pop_lsb(b);
+      seen |= attacks_from(c, type_of(piece_on(s)), s);
+  }
+  return seen & pieces(c) & ~shields;
 }
 
 // Chess Campaign: whether a variant has pieces that burn (Dragons, Flames or Suns)
